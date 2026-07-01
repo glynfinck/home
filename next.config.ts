@@ -1,7 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  images: {
+    remotePatterns: [
+      // Local Supabase Storage (media bucket)
+      { protocol: "http", hostname: "127.0.0.1", port: "54321" },
+      // Hosted Supabase Storage
+      { protocol: "https", hostname: "*.supabase.co" },
+    ],
+  },
 };
 
 export default nextConfig;
