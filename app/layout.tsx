@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { getSeoSettings } from "@/lib/data/settings";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,14 +15,29 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "glyn.dev",
-    template: "%s · glyn.dev",
-  },
-  description:
-    "Software engineer & quant researcher. Projects, blog, and quantitative research.",
-};
+// Data-driven site metadata — editable from /admin/settings, no redeploy.
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getSeoSettings();
+
+  return {
+    metadataBase: new URL(
+      process.env.NEXT_PUBLIC_SITE_URL ?? seo.url ?? "http://localhost:3000",
+    ),
+    title: {
+      default: seo.default_title,
+      template: seo.title_template,
+    },
+    description: seo.description,
+    openGraph: {
+      siteName: seo.default_title,
+      type: "website",
+      url: "/",
+    },
+    alternates: {
+      types: { "application/rss+xml": "/rss.xml" },
+    },
+  };
+}
 
 export default function RootLayout({
   children,
