@@ -347,6 +347,10 @@ export type Database = {
     Functions: {
       increment_post_views: { Args: { post_slug: string }; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }
+      is_valid_parent: {
+        Args: { p_parent_id: string; p_post_id: string }
+        Returns: boolean
+      }
       log_paper_download: { Args: { paper_slug: string }; Returns: undefined }
       moderate_comment: {
         Args: {

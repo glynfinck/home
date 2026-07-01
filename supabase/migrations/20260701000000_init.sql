@@ -244,6 +244,28 @@ begin
 end;
 $$;
 
+-- is_valid_parent(): threading check for the comments insert policy.
+-- Security definer so the policy doesn't subquery `comments` (which would
+-- recurse into its own RLS). Enforces one-level threading: the parent must
+-- be a visible top-level comment on the same post.
+create or replace function public.is_valid_parent(p_parent_id uuid, p_post_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.comments c
+    where c.id = p_parent_id
+      and c.post_id = p_post_id
+      and c.parent_id is null
+      and c.status = 'visible'
+      and c.deleted_at is null
+  );
+$$;
+
 -- moderate_comment(): admin-only status change (column grants keep `status`
 -- out of reach of regular users, so moderation goes through this RPC)
 create or replace function public.moderate_comment(
@@ -358,6 +380,15 @@ create policy "Visible comments are viewable by everyone"
   on public.comments for select
   using (status = 'visible' and deleted_at is null);
 
+-- Owners always see their own rows. Also required for soft deletes: an
+-- UPDATE whose WHERE clause reads the table applies SELECT policies to the
+-- NEW row too — without this policy, setting deleted_at would make the row
+-- invisible to its author mid-statement and Postgres rejects the update.
+create policy "Users can view own comments"
+  on public.comments for select
+  to authenticated
+  using (user_id = (select auth.uid()));
+
 create policy "Admins manage comments"
   on public.comments for all
   to authenticated
@@ -377,15 +408,12 @@ create policy "Users can comment on published posts"
         and p.status = 'published'
         and p.published_at <= now()
     )
-    -- one-level threading: parent must be a top-level comment on the same post
+    -- one-level threading: parent must be a visible top-level comment on the
+    -- same post (checked via security-definer helper — a direct subquery on
+    -- comments would recurse into this table's own RLS)
     and (
       parent_id is null
-      or exists (
-        select 1 from public.comments c
-        where c.id = parent_id
-          and c.post_id = post_id
-          and c.parent_id is null
-      )
+      or public.is_valid_parent(parent_id, post_id)
     )
   );
 
@@ -445,11 +473,13 @@ grant update (display_name, avatar_url) on public.profiles to authenticated;
 
 -- RPCs
 revoke all on function public.is_admin() from public;
+revoke all on function public.is_valid_parent(uuid, uuid) from public;
 revoke all on function public.increment_post_views(text) from public;
 revoke all on function public.log_paper_download(text) from public;
 revoke all on function public.moderate_comment(uuid, public.comment_status) from public;
 
 grant execute on function public.is_admin() to anon, authenticated;
+grant execute on function public.is_valid_parent(uuid, uuid) to authenticated;
 grant execute on function public.increment_post_views(text) to anon, authenticated;
 grant execute on function public.log_paper_download(text) to anon, authenticated;
 grant execute on function public.moderate_comment(uuid, public.comment_status) to authenticated;

@@ -1,4 +1,5 @@
 import { NAV_ITEMS } from "@/lib/nav";
+import { AuthButton } from "@/components/site/auth-button";
 import { MobileNav } from "@/components/site/mobile-nav";
 import { NavLink } from "@/components/site/nav-link";
 import { ThemeToggle } from "@/components/site/theme-toggle";
@@ -20,6 +21,7 @@ export function Navbar() {
         </div>
         <div className="flex items-center gap-1">
           <ThemeToggle />
+          <AuthButton />
           <MobileNav items={NAV_ITEMS} />
         </div>
       </div>

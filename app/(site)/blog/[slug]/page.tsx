@@ -5,8 +5,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight, FileText } from "lucide-react";
 
+import { Suspense } from "react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Comments } from "@/components/site/comments/comments";
 import { ViewTracker } from "@/components/site/view-tracker";
 import { getPapersForPost, getPostBySlug } from "@/lib/data/posts";
 import { formatDate } from "@/lib/format";
@@ -115,7 +119,16 @@ export default async function BlogPostPage({ params }: Props) {
         </aside>
       ) : null}
 
-      {/* Comments land here in Phase 4 */}
+      <Suspense
+        fallback={
+          <div className="mt-12 space-y-3 border-t border-border/60 pt-8">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-20 w-full" />
+          </div>
+        }
+      >
+        <Comments postId={post.id} postSlug={post.slug} />
+      </Suspense>
     </article>
   );
 }
