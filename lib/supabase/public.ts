@@ -13,5 +13,14 @@ import type { Database } from "@/types/database";
 export const supabasePublic = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  { auth: { persistSession: false, autoRefreshToken: false } },
+  {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      // unstable_cache is the single caching layer. Without this, Next's
+      // patched fetch can cache the inner REST call itself, so tag
+      // revalidation would re-run the callback only to re-read a stale
+      // fetch-cache entry.
+      fetch: (url, init) => fetch(url, { ...init, cache: "no-store" }),
+    },
+  },
 );

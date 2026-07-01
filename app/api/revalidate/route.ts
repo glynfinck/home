@@ -45,8 +45,9 @@ export async function POST(request: Request) {
     if (body.table === "research_papers") tags.add(CACHE_TAGS.paper(slug));
   }
 
-  // "max" = hard expire: the next request refetches fresh data
-  for (const tag of tags) revalidateTag(tag, "max");
+  // { expire: 0 } = immediate hard expiry — the very next request refetches.
+  // ("max" would be stale-while-revalidate: one request behind.)
+  for (const tag of tags) revalidateTag(tag, { expire: 0 });
 
   return NextResponse.json({ revalidated: [...tags] });
 }
