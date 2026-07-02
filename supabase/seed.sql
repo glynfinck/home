@@ -89,7 +89,45 @@ values
     'momentum-signal-decay',
     'How fast do momentum signals decay?',
     'A quick empirical look at signal decay for cross-sectional momentum, and what it means for rebalance frequency.',
-    E'Momentum is one of the most robust anomalies in the literature — but how quickly does the signal decay once formed?\n\n## Setup\n\nWe form a standard cross-sectional momentum signal and track its information coefficient over increasing lags:\n\n$$\n\\text{IC}(k) = \\text{corr}\\left(\\text{mom}_t, \\; r_{t+k}\\right)\n$$\n\n```python\nimport duckdb\n\ncon = duckdb.connect()\nic = con.sql("""\n  select lag, corr(signal, fwd_return) as ic\n  from signals\n  group by lag\n  order by lag\n""").df()\n```\n\n## Takeaway\n\n<Callout type="warning">\nHalf-life matters more than raw IC: a strong signal that decays in days demands infrastructure a monthly rebalance never will.\n</Callout>\n\nThe full write-up, with data and robustness checks, is in the linked research paper below.',
+    $mdx$Momentum is one of the most robust anomalies in the literature — but how quickly does the signal decay once formed?
+
+## Setup
+
+We form a standard cross-sectional momentum signal and track its information coefficient over increasing lags:
+
+$$
+\text{IC}(k) = \text{corr}\left(\text{mom}_t, \; r_{t+k}\right)
+$$
+
+```python title="signal.py"
+import numpy as np
+import pandas as pd
+from dataclasses import dataclass
+
+@dataclass
+class SignalConfig:
+    """Cross-sectional momentum configuration."""
+    lookback: int = 90   # formation window (days)
+    skip: int = 7        # skip the most recent week
+
+def momentum_signal(prices: pd.DataFrame, cfg: SignalConfig) -> pd.DataFrame:
+    # log-return momentum, skipping the most recent week
+    rets = np.log(prices).diff()
+    mom = rets.rolling(cfg.lookback).sum().shift(cfg.skip)
+    ranked = mom.rank(axis=1, pct=True) - 0.5
+    return ranked.div(ranked.abs().sum(axis=1), axis=0)
+
+ic = signal.corrwith(fwd_returns, axis=1).mean()
+print(f"mean IC: {ic:.4f}")
+```
+
+## Takeaway
+
+<Callout type="warning">
+Half-life matters more than raw IC: a strong signal that decays in days demands infrastructure a monthly rebalance never will.
+</Callout>
+
+The full write-up, with data and robustness checks, is in the linked research paper below.$mdx$,
     array['quant', 'momentum', 'research'],
     'published',
     now() - interval '1 day',
