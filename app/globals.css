@@ -144,7 +144,7 @@
  * ------------------------------------------------------------------------- */
 @layer components {
   .prose-article {
-    @apply prose prose-zinc dark:prose-invert max-w-none;
+    @apply prose max-w-none;
     @apply prose-headings:font-semibold prose-headings:tracking-tight;
     @apply prose-a:font-normal prose-a:text-brand prose-a:no-underline hover:prose-a:underline prose-a:underline-offset-4;
     @apply prose-code:font-mono prose-code:text-[0.875em] prose-code:before:content-none prose-code:after:content-none;
@@ -163,6 +163,44 @@
   .prose-article :is(h2, h3, h4) > a {
     @apply text-inherit no-underline hover:underline;
   }
+}
+
+/* ---------------------------------------------------------------------------
+ * Prose palette — pinned to the design tokens, deliberately UNLAYERED.
+ *
+ * `prose-zinc dark:prose-invert` via @apply emits @supports (color: lab(…))
+ * fallback blocks that Turbopack mis-attaches to neighboring selectors — in
+ * dark mode the body var ended up re-declared with the light palette
+ * (dark gray on near-black = faint text). Unlayered rules beat every
+ * @layer rule in the cascade, so these pins are immune to that emission,
+ * and token-based values flip with .dark automatically.
+ * ------------------------------------------------------------------------- */
+.prose-article {
+  --tw-prose-body: oklch(0.37 0.013 285.805); /* zinc-700 */
+  --tw-prose-headings: var(--foreground);
+  --tw-prose-lead: var(--muted-foreground);
+  --tw-prose-links: var(--brand);
+  --tw-prose-bold: var(--foreground);
+  --tw-prose-counters: var(--muted-foreground);
+  --tw-prose-bullets: oklch(0.871 0.006 286.286); /* zinc-300 */
+  --tw-prose-hr: var(--border);
+  --tw-prose-quotes: var(--muted-foreground);
+  --tw-prose-quote-borders: var(--border);
+  --tw-prose-captions: var(--muted-foreground);
+  --tw-prose-kbd: var(--foreground);
+  --tw-prose-kbd-shadows: 9 9 11; /* zinc-950 */
+  --tw-prose-code: var(--foreground);
+  --tw-prose-pre-code: oklch(0.37 0.013 285.805); /* zinc-700 */
+  --tw-prose-pre-bg: var(--card);
+  --tw-prose-th-borders: var(--border);
+  --tw-prose-td-borders: var(--border);
+}
+
+.dark .prose-article {
+  --tw-prose-body: oklch(0.871 0.006 286.286); /* zinc-300 */
+  --tw-prose-bullets: oklch(0.442 0.017 285.786); /* zinc-600 */
+  --tw-prose-kbd-shadows: 250 250 250; /* zinc-50 */
+  --tw-prose-pre-code: oklch(0.92 0.004 286.32); /* zinc-200 */
 }
 
 /* ---------------------------------------------------------------------------
@@ -192,7 +230,12 @@
   background: color-mix(in oklch, var(--brand) 10%, transparent);
 }
 
-/* shiki dual-theme: use the dark palette when .dark is active */
+/* shiki dual-theme: spans carry --shiki-light/--shiki-dark vars only
+   (no inline color) — apply the palette per theme here */
+[data-rehype-pretty-code-figure] span {
+  color: var(--shiki-light, inherit);
+}
+
 .dark [data-rehype-pretty-code-figure] span {
   color: var(--shiki-dark, inherit);
 }
