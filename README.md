@@ -82,6 +82,29 @@ password user instead (Studio → Authentication), or enable providers in
 with a GitHub OAuth app pointing at
 `http://127.0.0.1:54321/auth/v1/callback`.
 
+## Tests
+
+[Vitest](https://vitest.dev) suites under `tests/`, run against the local
+Supabase stack:
+
+- `tests/integration/` — RLS/auth policies exercised with real user sessions
+  via `@supabase/supabase-js` (published-vs-draft visibility, comment
+  ownership, one-level threading, moderation, soft delete, profile
+  self-protection, security-definer counters).
+- `tests/e2e/` — drives a production build over HTTP (the global setup boots
+  `next start` and uploads a fixture PDF): pages, the MDX pipeline, signed
+  research downloads, 404s, robots/sitemap/RSS.
+
+```bash
+supabase start                # tests need the local stack + .env.local
+npm run test:integration      # RLS/auth (no build required)
+npm run build && npm run test:e2e
+npm test                      # both suites
+npm run test:watch            # watch mode while developing
+```
+
+These run in CI on every push and pull request (see below).
+
 ## Production deploy
 
 1. **Supabase project** — create one, then:
@@ -104,6 +127,57 @@ with a GitHub OAuth app pointing at
    directly in Studio — the admin UI revalidates inline.)
 5. **Domain** — add `glyn.dev` in Vercel.
 6. **Admin** — sign in once on production, run the bootstrap SQL above.
+
+## Continuous integration (GitHub Actions)
+
+Deploys are handled by **Vercel's Git integration** (production branch =
+`main`). GitHub Actions (`.github/workflows/ci.yml`) owns testing and database
+migrations, in two jobs:
+
+- **verify** (every PR + push) — spins up a throwaway Supabase inside the
+  runner, applies migrations + seed, then runs lint, typecheck, the Vitest
+  integration suite (`tests/integration` — RLS/auth), `next build`, and the
+  Vitest e2e suite (`tests/e2e` — pages, MDX, downloads, SEO). A broken
+  migration or an RLS regression fails here, before merge.
+- **migrate** (push to `main` only) — `supabase db push` to the production
+  project. Additive, tracked, transactional; it **never** resets or seeds
+  prod. Logs `migration list` + `db push --dry-run` before applying.
+
+`db reset` (destructive) only ever runs against the disposable runner
+database in **verify** — it has no production credentials and cannot reach the
+live project. Production only receives additive `db push` migrations, so
+existing data is never wiped.
+
+`migrate` **skips cleanly until its secrets exist**, so your first push is
+green. Add these repo secrets to enable automatic migrations:
+
+| secret | where to get it |
+| --- | --- |
+| `SUPABASE_ACCESS_TOKEN` | supabase.com → Account → Access Tokens |
+| `SUPABASE_PROJECT_REF` | the `xxxx` in `xxxx.supabase.co` |
+| `SUPABASE_DB_PASSWORD` | the DB password set when creating the project |
+
+```bash
+gh secret set SUPABASE_ACCESS_TOKEN
+gh secret set SUPABASE_PROJECT_REF
+gh secret set SUPABASE_DB_PASSWORD
+```
+
+### Vercel deploy settings
+
+- The five runtime env vars (Supabase URL/keys, `REVALIDATE_SECRET`,
+  `NEXT_PUBLIC_SITE_URL`) must be set in the Vercel project (Settings →
+  Environment Variables) — Vercel's build fetches Supabase at build time, so a
+  missing var fails the build.
+- **Production deploys** happen automatically on push to `main`.
+- To **skip preview deploys on PRs** (deploy only when `main` changes), set
+  Vercel → Project → Settings → Git → **Ignored Build Step** to:
+
+  ```bash
+  bash -c 'if [ "$VERCEL_GIT_COMMIT_REF" = "main" ]; then exit 1; else exit 0; fi'
+  ```
+
+  (exit 1 = build, exit 0 = skip — so only `main` builds.)
 
 ## Project layout
 
