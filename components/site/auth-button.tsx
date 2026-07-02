@@ -9,14 +9,6 @@ import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -24,14 +16,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SignInButtons } from "@/components/site/sign-in-buttons";
+import { SignInDialog } from "@/components/site/sign-in-dialog";
 import { createClient } from "@/lib/supabase/client";
 
 /**
  * Session-aware control for the navbar. Pages stay cacheable because auth
  * state is resolved in the browser, not during server render.
+ *
+ * The optional props let the mobile overlay reuse this control: `onRequestSignIn`
+ * swaps the signed-out state for a labeled button that hands sign-in back to the
+ * caller (so the overlay can close before opening the dialog, avoiding a nested
+ * Dialog-in-Sheet), and `onNavigate` fires when a menu link is chosen so the
+ * overlay can close itself.
  */
-export function AuthButton() {
+export function AuthButton({
+  onRequestSignIn,
+  onNavigate,
+}: {
+  onRequestSignIn?: () => void;
+  onNavigate?: () => void;
+} = {}) {
   const router = useRouter();
   const [user, setUser] = React.useState<User | null>(null);
   const [isAdmin, setIsAdmin] = React.useState(false);
@@ -73,23 +77,19 @@ export function AuthButton() {
   if (!loaded) return <div className="size-8" aria-hidden />;
 
   if (!user) {
+    if (onRequestSignIn) {
+      return (
+        <Button variant="outline" size="sm" onClick={onRequestSignIn}>
+          <LogIn className="size-4" /> Sign in
+        </Button>
+      );
+    }
     return (
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label="Sign in">
-            <LogIn className="size-4" />
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Sign in</DialogTitle>
-            <DialogDescription>
-              Sign in with a third-party account to join the discussion.
-            </DialogDescription>
-          </DialogHeader>
-          <SignInButtons size="default" />
-        </DialogContent>
-      </Dialog>
+      <SignInDialog>
+        <Button variant="ghost" size="icon" aria-label="Sign in">
+          <LogIn className="size-4" />
+        </Button>
+      </SignInDialog>
     );
   }
 
@@ -120,12 +120,17 @@ export function AuthButton() {
         <DropdownMenuSeparator />
         {isAdmin ? (
           <DropdownMenuItem asChild>
-            <Link href="/admin">
+            <Link href="/admin" onClick={onNavigate}>
               <ShieldCheck className="size-4" /> Admin
             </Link>
           </DropdownMenuItem>
         ) : null}
-        <DropdownMenuItem onClick={signOut}>
+        <DropdownMenuItem
+          onClick={() => {
+            onNavigate?.();
+            signOut();
+          }}
+        >
           <LogOut className="size-4" /> Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>

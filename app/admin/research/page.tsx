@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { MobileListCard } from "@/components/admin/mobile-list-card";
 import { StatusBadge } from "@/components/admin/status-badge";
 import { adminListPapers } from "@/lib/data/admin";
 import { formatDate } from "@/lib/format";
@@ -28,7 +29,35 @@ export default async function AdminResearchPage() {
         </Button>
       </div>
 
-      <div className="mt-6 rounded-lg border">
+      {/* Mobile: stacked cards */}
+      <div className="mt-6 space-y-3 sm:hidden">
+        {papers.map((paper) => (
+          <MobileListCard
+            key={paper.id}
+            href={`/admin/research/${paper.id}`}
+            title={paper.title}
+            slug={paper.slug}
+            status={paper.status}
+          >
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="font-mono tabular-nums">
+                {paper.download_count} downloads
+              </span>
+              <span className="font-mono">
+                {formatDate(paper.published_at) || "—"}
+              </span>
+            </div>
+          </MobileListCard>
+        ))}
+        {papers.length === 0 ? (
+          <p className="rounded-lg border p-4 text-center text-sm text-muted-foreground">
+            No papers yet.
+          </p>
+        ) : null}
+      </div>
+
+      {/* Desktop: table */}
+      <div className="mt-6 hidden rounded-lg border sm:block">
         <Table>
           <TableHeader>
             <TableRow>

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { GitHubIcon } from "@/components/site/social-icons";
 import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -17,7 +18,13 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-export function SignInButtons({ size = "sm" }: { size?: "sm" | "default" }) {
+export function SignInButtons({
+  size = "sm",
+  className,
+}: {
+  size?: "sm" | "default";
+  className?: string;
+}) {
   const pathname = usePathname();
   const [pending, setPending] = React.useState<"github" | "google" | null>(null);
 
@@ -38,10 +45,11 @@ export function SignInButtons({ size = "sm" }: { size?: "sm" | "default" }) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className={cn("flex w-full flex-col gap-2", className)}>
       <Button
         variant="outline"
         size={size}
+        className="w-full"
         disabled={pending !== null}
         onClick={() => signIn("github")}
       >
@@ -51,6 +59,7 @@ export function SignInButtons({ size = "sm" }: { size?: "sm" | "default" }) {
       <Button
         variant="outline"
         size={size}
+        className="w-full"
         disabled={pending !== null}
         onClick={() => signIn("google")}
       >

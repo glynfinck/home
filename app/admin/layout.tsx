@@ -1,16 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import {
-  ExternalLink,
-  FileText,
-  FolderKanban,
-  LayoutDashboard,
-  MessageSquare,
-  PenSquare,
-  Settings,
-} from "lucide-react";
+import { ExternalLink } from "lucide-react";
 
+import { AdminMobileNav, AdminNavLinks } from "@/components/admin/admin-nav";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
@@ -19,15 +12,6 @@ export const metadata: Metadata = {
 };
 
 export const dynamic = "force-dynamic";
-
-const NAV = [
-  { href: "/admin", label: "Overview", icon: LayoutDashboard },
-  { href: "/admin/posts", label: "Posts", icon: PenSquare },
-  { href: "/admin/projects", label: "Projects", icon: FolderKanban },
-  { href: "/admin/research", label: "Research", icon: FileText },
-  { href: "/admin/comments", label: "Comments", icon: MessageSquare },
-  { href: "/admin/settings", label: "Settings", icon: Settings },
-];
 
 export default async function AdminLayout({
   children,
@@ -56,15 +40,7 @@ export default async function AdminLayout({
           </Link>
         </div>
         <nav className="flex flex-1 flex-col gap-0.5 p-3">
-          {NAV.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
-            >
-              <Icon className="size-4" /> {label}
-            </Link>
-          ))}
+          <AdminNavLinks />
         </nav>
         <div className="border-t border-border/60 p-3">
           <Link
@@ -78,16 +54,12 @@ export default async function AdminLayout({
 
       <div className="min-w-0 flex-1">
         {/* Mobile top bar */}
-        <div className="flex h-12 items-center gap-4 overflow-x-auto border-b border-border/60 px-4 sm:hidden">
-          {NAV.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              className="shrink-0 text-sm text-muted-foreground"
-            >
-              {label}
-            </Link>
-          ))}
+        <div className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-4 backdrop-blur-md sm:hidden">
+          <Link href="/admin" className="font-mono text-sm font-medium">
+            glyn<span className="text-brand">.dev</span>
+            <span className="ml-2 text-xs text-muted-foreground">admin</span>
+          </Link>
+          <AdminMobileNav />
         </div>
         <main className="p-6 lg:p-8">{children}</main>
       </div>

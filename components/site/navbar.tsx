@@ -20,8 +20,10 @@ export function Navbar() {
           </nav>
         </div>
         <div className="flex items-center gap-1">
-          <ThemeToggle />
-          <AuthButton />
+          <div className="hidden items-center gap-1 md:flex">
+            <ThemeToggle />
+            <AuthButton />
+          </div>
           <MobileNav items={NAV_ITEMS} />
         </div>
       </div>

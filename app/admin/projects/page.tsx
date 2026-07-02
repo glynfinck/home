@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { MobileListCard } from "@/components/admin/mobile-list-card";
 import { StatusBadge } from "@/components/admin/status-badge";
 import { adminListProjects } from "@/lib/data/admin";
 
@@ -27,7 +28,37 @@ export default async function AdminProjectsPage() {
         </Button>
       </div>
 
-      <div className="mt-6 rounded-lg border">
+      {/* Mobile: stacked cards */}
+      <div className="mt-6 space-y-3 sm:hidden">
+        {projects.map((project) => (
+          <MobileListCard
+            key={project.id}
+            href={`/admin/projects/${project.id}`}
+            title={project.title}
+            slug={project.slug}
+            status={project.status}
+          >
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="font-mono tabular-nums">
+                Order {project.sort_order}
+              </span>
+              {project.featured ? (
+                <span className="inline-flex items-center gap-1 text-brand">
+                  <Star className="size-3 fill-brand text-brand" /> Featured
+                </span>
+              ) : null}
+            </div>
+          </MobileListCard>
+        ))}
+        {projects.length === 0 ? (
+          <p className="rounded-lg border p-4 text-center text-sm text-muted-foreground">
+            No projects yet.
+          </p>
+        ) : null}
+      </div>
+
+      {/* Desktop: table */}
+      <div className="mt-6 hidden rounded-lg border sm:block">
         <Table>
           <TableHeader>
             <TableRow>
