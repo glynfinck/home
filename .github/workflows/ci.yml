@@ -71,8 +71,8 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # migrate: push migrations to the production Supabase project. App deploys
-  # are handled by Vercel's own Git integration (production branch = main),
-  # so there is no deploy job here.
+  # are handled by Vercel (production branch = main, previews off), so there
+  # is no deploy job here.
   # Only on push to main, only after verify passes. Migration *validity* is
   # already proven by verify's `supabase db reset` on a fresh DB, so a broken
   # migration fails CI before it can reach production.

@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 
 import { supabasePublic } from "@/lib/supabase/public";
+import { safeRead } from "@/lib/data/util";
 import {
   profileSettingsSchema,
   seoSettingsSchema,
@@ -19,7 +20,7 @@ export const CACHE_TAGS = {
   paper: (slug: string) => `paper:${slug}`,
 } as const;
 
-const getRawSettings = unstable_cache(
+const getRawSettingsCached = unstable_cache(
   async (): Promise<Record<string, unknown>> => {
     const { data, error } = await supabasePublic
       .from("site_settings")
@@ -32,6 +33,9 @@ const getRawSettings = unstable_cache(
   ["site-settings"],
   { tags: [CACHE_TAGS.settings], revalidate: 3600 },
 );
+
+const getRawSettings = () =>
+  safeRead("site_settings", getRawSettingsCached, {} as Record<string, unknown>);
 
 export async function getProfileSettings(): Promise<ProfileSettings> {
   const settings = await getRawSettings();
