@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint app components lib",
+    "typecheck": "tsc --noEmit",
+    "test:rls": "node scripts/ci-smoke.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

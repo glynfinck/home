@@ -105,6 +105,51 @@ with a GitHub OAuth app pointing at
 5. **Domain** — add `glyn.dev` in Vercel.
 6. **Admin** — sign in once on production, run the bootstrap SQL above.
 
+## Continuous integration (GitHub Actions)
+
+`.github/workflows/ci.yml` runs three jobs:
+
+- **verify** (every PR + push) — spins up a throwaway Supabase inside the
+  runner, applies migrations + seed, then runs lint, typecheck, `next build`,
+  the RLS/auth matrix (`scripts/ci-smoke.mjs`) and a page/download e2e
+  (`scripts/ci-e2e.sh`). A broken migration or an RLS regression fails here,
+  before merge.
+- **migrate** (push to `main` only) — `supabase db push` to the production
+  project. Additive, tracked, transactional; it **never** resets or seeds
+  prod. Logs `migration list` + `db push --dry-run` before applying.
+- **deploy** (after migrate) — builds and ships to Vercel via the CLI.
+
+`db reset` (destructive) only ever runs against the disposable runner
+database in **verify** — it has no production credentials and cannot reach the
+live project. Production only receives additive `db push` migrations, so
+existing data is never wiped.
+
+Both production jobs **skip cleanly until their secrets exist**, so your first
+push is green. Add these repo secrets to turn migrate + deploy on:
+
+| secret | where to get it |
+| --- | --- |
+| `SUPABASE_ACCESS_TOKEN` | supabase.com → Account → Access Tokens |
+| `SUPABASE_PROJECT_REF` | the `xxxx` in `xxxx.supabase.co` |
+| `SUPABASE_DB_PASSWORD` | the DB password set when creating the project |
+| `VERCEL_TOKEN` | vercel.com → Account Settings → Tokens |
+| `VERCEL_ORG_ID` | `.vercel/project.json` after `vercel link` |
+| `VERCEL_PROJECT_ID` | same |
+
+```bash
+gh secret set SUPABASE_ACCESS_TOKEN
+gh secret set SUPABASE_PROJECT_REF
+gh secret set SUPABASE_DB_PASSWORD
+gh secret set VERCEL_TOKEN
+gh secret set VERCEL_ORG_ID
+gh secret set VERCEL_PROJECT_ID
+```
+
+Since Actions is now the deployer, disable Vercel's own Git auto-deploy
+(Vercel → Project → Settings → Git) to avoid double deploys. The five runtime
+env vars still live in the Vercel project — `vercel pull` reads them at deploy
+time; they are not duplicated as GitHub secrets.
+
 ## Project layout
 
 ```

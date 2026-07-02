@@ -439,6 +439,14 @@ revoke all on all tables in schema public from anon, authenticated;
 
 grant usage on schema public to anon, authenticated;
 
+-- service_role bypasses RLS but still needs table privileges. Grant it full
+-- access to everything in public so local matches hosted Supabase (where
+-- service_role is broadly privileged by default) — used for admin tooling
+-- and the storage signing client.
+grant all on all tables in schema public to service_role;
+grant all on all sequences in schema public to service_role;
+grant all on all routines in schema public to service_role;
+
 -- Public content: readable by everyone (RLS narrows to published/visible rows)
 grant select on
   public.profiles,
