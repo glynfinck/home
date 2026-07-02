@@ -130,9 +130,9 @@ These run in CI on every push and pull request (see below).
 
 ## Continuous integration (GitHub Actions)
 
-Deploys are handled by **Vercel's Git integration** (production branch =
-`main`). GitHub Actions (`.github/workflows/ci.yml`) owns testing and database
-migrations, in two jobs:
+Deploys are handled by **Vercel's Git integration**, configured to deploy the
+**production branch (`main`) only** — see below. GitHub Actions
+(`.github/workflows/ci.yml`) owns testing and database migrations, in two jobs:
 
 - **verify** (every PR + push) — spins up a throwaway Supabase inside the
   runner, applies migrations + seed, then runs lint, typecheck, the Vitest
@@ -163,21 +163,18 @@ gh secret set SUPABASE_PROJECT_REF
 gh secret set SUPABASE_DB_PASSWORD
 ```
 
-### Vercel deploy settings
+### Vercel setup
 
-- The five runtime env vars (Supabase URL/keys, `REVALIDATE_SECRET`,
-  `NEXT_PUBLIC_SITE_URL`) must be set in the Vercel project (Settings →
-  Environment Variables) — Vercel's build fetches Supabase at build time, so a
-  missing var fails the build.
-- **Production deploys** happen automatically on push to `main`.
-- To **skip preview deploys on PRs** (deploy only when `main` changes), set
-  Vercel → Project → Settings → Git → **Ignored Build Step** to:
-
-  ```bash
-  bash -c 'if [ "$VERCEL_GIT_COMMIT_REF" = "main" ]; then exit 1; else exit 0; fi'
-  ```
-
-  (exit 1 = build, exit 0 = skip — so only `main` builds.)
+- Set the five runtime env vars (Supabase URL/keys, `REVALIDATE_SECRET`,
+  `NEXT_PUBLIC_SITE_URL`) in the Vercel project → Settings → Environment
+  Variables, **Production** scope. Vercel's build reads Supabase at build
+  time, so a missing var fails the build.
+- **Deploy production only (no PR previews):** Vercel → Settings → Build and
+  Deployment (or → Git) → **Ignored Build Step** →
+  `if [ "$VERCEL_GIT_COMMIT_REF" = "main" ]; then exit 1; else exit 0; fi`
+  (exit 1 = build, exit 0 = skip → only `main` builds).
+- Production deploys happen on push to `main`. After changing project
+  settings/env vars, **redeploy** so the live deployment picks them up.
 
 ## Project layout
 
