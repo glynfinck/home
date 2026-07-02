@@ -5,7 +5,10 @@ import { z } from "zod";
 export const profileSettingsSchema = z.object({
   name: z.string().default("Glyn Finck"),
   headline: z.string().default(""),
+  // Short hero subtext (plain text).
   bio: z.string().default(""),
+  // Long-form About page body, rendered as MDX. Falls back to `bio` if empty.
+  about: z.string().default(""),
   location: z.string().default(""),
   email: z.string().default(""),
   resume_url: z.string().default(""),
