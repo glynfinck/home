@@ -1,3 +1,5 @@
+import "katex/dist/katex.min.css";
+
 import type { Metadata } from "next";
 import { FileDown, Mail, MapPin } from "lucide-react";
 
@@ -8,10 +10,11 @@ import {
   XIcon,
 } from "@/components/site/social-icons";
 import { getProfileSettings, getSocialLinks } from "@/lib/data/settings";
+import { Mdx } from "@/lib/mdx";
 
 export const metadata: Metadata = {
   title: "About",
-  description: "About Glyn Finck — background, experience, and contact.",
+  description: "About Glyn Finck. Background, experience, and contact.",
 };
 
 const BRAND_ICONS: Record<string, React.ComponentType<{ className?: string }>> =
@@ -55,7 +58,11 @@ export default async function AboutPage() {
         ) : null}
       </div>
 
-      {profile.bio ? (
+      {profile.about ? (
+        <div className="mt-8 border-t border-border/60 pt-8">
+          <Mdx source={profile.about} />
+        </div>
+      ) : profile.bio ? (
         <div className="mt-8 space-y-4 border-t border-border/60 pt-8 leading-relaxed text-muted-foreground">
           {profile.bio.split("\n\n").map((paragraph, i) => (
             <p key={i}>{paragraph}</p>

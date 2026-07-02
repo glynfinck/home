@@ -83,7 +83,23 @@ export function ProfileSettingsForm({ initial }: { initial: ProfileSettings }) {
           <Textarea
             value={values.bio}
             onChange={(e) => set("bio", e.target.value)}
-            rows={4}
+            rows={3}
+            placeholder="Short hero subtext (plain text)."
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label>
+            About{" "}
+            <span className="font-normal text-muted-foreground">
+              (MDX — rendered on the About page; falls back to Bio if empty)
+            </span>
+          </Label>
+          <Textarea
+            value={values.about}
+            onChange={(e) => set("about", e.target.value)}
+            rows={12}
+            className="font-mono text-sm leading-relaxed"
+            placeholder={"## Optional heading\n\nYour story in MDX…"}
           />
         </div>
         <div className="grid gap-2 sm:grid-cols-2 sm:gap-4">
