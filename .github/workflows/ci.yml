@@ -21,9 +21,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Node 22+: @supabase/supabase-js needs a native WebSocket (Node 20 lacks it)
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
@@ -55,14 +56,14 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Integration tests (RLS + auth)
+        run: npm run test:integration
+
       - name: Build
         run: npm run build
 
-      - name: RLS + auth matrix
-        run: set -a && . ./.env.local && set +a && npm run test:rls
-
-      - name: End-to-end smoke
-        run: bash scripts/ci-e2e.sh
+      - name: End-to-end tests
+        run: npm run test:e2e
 
       - name: Stop Supabase
         if: always()

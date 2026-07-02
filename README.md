@@ -82,6 +82,29 @@ password user instead (Studio → Authentication), or enable providers in
 with a GitHub OAuth app pointing at
 `http://127.0.0.1:54321/auth/v1/callback`.
 
+## Tests
+
+[Vitest](https://vitest.dev) suites under `tests/`, run against the local
+Supabase stack:
+
+- `tests/integration/` — RLS/auth policies exercised with real user sessions
+  via `@supabase/supabase-js` (published-vs-draft visibility, comment
+  ownership, one-level threading, moderation, soft delete, profile
+  self-protection, security-definer counters).
+- `tests/e2e/` — drives a production build over HTTP (the global setup boots
+  `next start` and uploads a fixture PDF): pages, the MDX pipeline, signed
+  research downloads, 404s, robots/sitemap/RSS.
+
+```bash
+supabase start                # tests need the local stack + .env.local
+npm run test:integration      # RLS/auth (no build required)
+npm run build && npm run test:e2e
+npm test                      # both suites
+npm run test:watch            # watch mode while developing
+```
+
+These run in CI on every push and pull request (see below).
+
 ## Production deploy
 
 1. **Supabase project** — create one, then:
@@ -110,10 +133,10 @@ with a GitHub OAuth app pointing at
 `.github/workflows/ci.yml` runs three jobs:
 
 - **verify** (every PR + push) — spins up a throwaway Supabase inside the
-  runner, applies migrations + seed, then runs lint, typecheck, `next build`,
-  the RLS/auth matrix (`scripts/ci-smoke.mjs`) and a page/download e2e
-  (`scripts/ci-e2e.sh`). A broken migration or an RLS regression fails here,
-  before merge.
+  runner, applies migrations + seed, then runs lint, typecheck, the Vitest
+  integration suite (`tests/integration` — RLS/auth), `next build`, and the
+  Vitest e2e suite (`tests/e2e` — pages, MDX, downloads, SEO). A broken
+  migration or an RLS regression fails here, before merge.
 - **migrate** (push to `main` only) — `supabase db push` to the production
   project. Additive, tracked, transactional; it **never** resets or seeds
   prod. Logs `migration list` + `db push --dry-run` before applying.
