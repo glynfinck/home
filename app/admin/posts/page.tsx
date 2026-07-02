@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { MobileListCard } from "@/components/admin/mobile-list-card";
 import { StatusBadge } from "@/components/admin/status-badge";
 import { adminListPosts } from "@/lib/data/admin";
 import { formatDate } from "@/lib/format";
@@ -29,7 +30,48 @@ export default async function AdminPostsPage() {
         </Button>
       </div>
 
-      <div className="mt-6 rounded-lg border">
+      {/* Mobile: stacked cards */}
+      <div className="mt-6 space-y-3 sm:hidden">
+        {posts.map((post) => (
+          <MobileListCard
+            key={post.id}
+            href={`/admin/posts/${post.id}`}
+            title={post.title}
+            slug={post.slug}
+            status={post.status}
+          >
+            {post.tags.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {post.tags.slice(0, 3).map((tag) => (
+                  <Badge
+                    key={tag}
+                    variant="outline"
+                    className="font-mono text-[10px]"
+                  >
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            ) : null}
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="font-mono tabular-nums">
+                {post.view_count} views
+              </span>
+              <span className="font-mono">
+                {formatDate(post.published_at) || "—"}
+              </span>
+            </div>
+          </MobileListCard>
+        ))}
+        {posts.length === 0 ? (
+          <p className="rounded-lg border p-4 text-center text-sm text-muted-foreground">
+            No posts yet — write the first one.
+          </p>
+        ) : null}
+      </div>
+
+      {/* Desktop: table */}
+      <div className="mt-6 hidden rounded-lg border sm:block">
         <Table>
           <TableHeader>
             <TableRow>

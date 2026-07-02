@@ -2,7 +2,7 @@ import { MessageSquare } from "lucide-react";
 
 import { CommentForm } from "@/components/site/comments/comment-form";
 import { CommentItem } from "@/components/site/comments/comment-item";
-import { SignInButtons } from "@/components/site/sign-in-buttons";
+import { CommentSignInPrompt } from "@/components/site/comments/comment-signin-prompt";
 import { getCommentsForPost } from "@/lib/data/comments";
 
 /** Server-rendered, never cached — comments are always fresh. */
@@ -28,14 +28,7 @@ export async function Comments({
         {userId ? (
           <CommentForm postId={postId} postSlug={postSlug} />
         ) : (
-          <div className="rounded-lg border border-dashed bg-card/40 p-5">
-            <p className="text-sm text-muted-foreground">
-              Sign in to join the discussion.
-            </p>
-            <div className="mt-3">
-              <SignInButtons />
-            </div>
-          </div>
+          <CommentSignInPrompt />
         )}
       </div>
 

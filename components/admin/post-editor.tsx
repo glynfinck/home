@@ -78,11 +78,11 @@ export function PostEditor({
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="truncate text-2xl font-semibold tracking-tight">
           {values.id ? "Edit post" : "New post"}
         </h1>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {values.id ? (
             <>
               <Button asChild variant="outline" size="sm">

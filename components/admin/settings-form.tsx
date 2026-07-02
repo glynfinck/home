@@ -154,17 +154,18 @@ export function SocialLinksForm({ initial }: { initial: SocialLink[] }) {
       </p>
       <div className="mt-4 space-y-3">
         {links.map((link, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <GripVertical className="size-4 shrink-0 text-muted-foreground" />
+          <div key={i} className="flex flex-wrap items-center gap-2">
+            <GripVertical className="hidden size-4 shrink-0 text-muted-foreground sm:block" />
             <Input
               value={link.label}
               placeholder="Label"
-              className="w-32"
+              className="w-full sm:w-32"
               onChange={(e) => update(i, { label: e.target.value })}
             />
             <Input
               value={link.url}
               placeholder="https://…"
+              className="w-full sm:flex-1"
               onChange={(e) => update(i, { url: e.target.value })}
             />
             <Select
@@ -173,7 +174,7 @@ export function SocialLinksForm({ initial }: { initial: SocialLink[] }) {
                 update(i, { icon: icon === "none" ? undefined : icon })
               }
             >
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="flex-1 sm:w-32 sm:flex-none">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -188,6 +189,7 @@ export function SocialLinksForm({ initial }: { initial: SocialLink[] }) {
               variant="ghost"
               size="sm"
               aria-label="Remove link"
+              className="shrink-0"
               onClick={() => setLinks((all) => all.filter((_, j) => j !== i))}
             >
               <X className="size-4" />
