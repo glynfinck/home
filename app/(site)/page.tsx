@@ -6,6 +6,7 @@ import { PostRow } from "@/components/site/post-card";
 import { ProjectCard } from "@/components/site/project-card";
 import { ResearchCard } from "@/components/site/research-card";
 import { SectionHeading } from "@/components/site/section-heading";
+import { TypedText } from "@/components/site/typed-text";
 import {
   GitHubIcon,
   LinkedInIcon,
@@ -38,7 +39,9 @@ export default async function HomePage() {
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(color-mix(in_oklch,var(--border)_80%,transparent)_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_0%,black_10%,transparent_70%)]"
         />
         <div className="relative mx-auto w-full max-w-5xl px-6 py-24 sm:py-32">
-          <p className="font-mono text-sm text-brand">~/glyn.dev</p>
+          <p className="font-mono text-sm text-brand">
+            <TypedText text="~/glyn.dev" caret="blink" delayMs={250} />
+          </p>
           <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
             {profile.headline || `${profile.name}.`}
           </h1>

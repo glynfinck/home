@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
+import { TypedTextInView } from "@/components/site/typed-text-in-view";
+
 export function SectionHeading({
   label,
   title,
@@ -16,7 +18,7 @@ export function SectionHeading({
     <div className="flex items-end justify-between gap-4">
       <div>
         <p className="font-mono text-xs tracking-widest text-brand uppercase">
-          {label}
+          <TypedTextInView text={label} />
         </p>
         <h2 className="mt-2 text-2xl font-semibold tracking-tight">{title}</h2>
       </div>

@@ -9,6 +9,7 @@ import {
   LinkedInIcon,
   XIcon,
 } from "@/components/site/social-icons";
+import { TypedTextInView } from "@/components/site/typed-text-in-view";
 import { getProfileSettings, getSocialLinks } from "@/lib/data/settings";
 import { Mdx } from "@/lib/mdx";
 
@@ -35,7 +36,7 @@ export default async function AboutPage() {
   return (
     <section className="mx-auto w-full max-w-3xl px-6 py-16">
       <p className="font-mono text-xs tracking-widest text-brand uppercase">
-        About
+        <TypedTextInView text="About" />
       </p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">
         {profile.name}

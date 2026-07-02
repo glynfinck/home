@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { PostRow } from "@/components/site/post-card";
+import { TypedTextInView } from "@/components/site/typed-text-in-view";
 import { getAllTags, getPublishedPosts } from "@/lib/data/posts";
 
 export const metadata: Metadata = {
@@ -17,7 +18,7 @@ export default async function BlogPage() {
   return (
     <section className="mx-auto w-full max-w-3xl px-6 py-16">
       <p className="font-mono text-xs tracking-widest text-brand uppercase">
-        Blog
+        <TypedTextInView text="Blog" />
       </p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">Writing</h1>
       <p className="mt-3 text-muted-foreground">
