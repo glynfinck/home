@@ -70,7 +70,9 @@ jobs:
         run: supabase stop --no-backup || true
 
   # ---------------------------------------------------------------------------
-  # migrate: push migrations to the production Supabase project.
+  # migrate: push migrations to the production Supabase project. App deploys
+  # are handled by Vercel's own Git integration (production branch = main),
+  # so there is no deploy job here.
   # Only on push to main, only after verify passes. Migration *validity* is
   # already proven by verify's `supabase db reset` on a fresh DB, so a broken
   # migration fails CI before it can reach production.
@@ -125,50 +127,3 @@ jobs:
       - name: Apply migrations
         if: steps.guard.outputs.ready == 'true'
         run: supabase db push --password "${{ secrets.SUPABASE_DB_PASSWORD }}"
-
-  # ---------------------------------------------------------------------------
-  # deploy: build & ship to Vercel production, after migrations succeed.
-  # `needs: migrate` means a failed migration blocks the deploy entirely.
-  # `vercel pull` fetches the env vars you set in the Vercel project, so the
-  # Supabase keys live there — not in GitHub. Skips cleanly without secrets.
-  # ---------------------------------------------------------------------------
-  deploy:
-    needs: migrate
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    concurrency: production-deploy
-    env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Check Vercel secrets
-        id: guard
-        env:
-          TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          ORG: ${{ secrets.VERCEL_ORG_ID }}
-          PROJECT: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: |
-          if [ -n "$TOKEN" ] && [ -n "$ORG" ] && [ -n "$PROJECT" ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Deploy skipped::Add VERCEL_TOKEN, VERCEL_ORG_ID and VERCEL_PROJECT_ID secrets to enable production deploys."
-          fi
-
-      - name: Install Vercel CLI
-        if: steps.guard.outputs.ready == 'true'
-        run: npm i -g vercel@latest
-
-      - name: Pull project settings
-        if: steps.guard.outputs.ready == 'true'
-        run: vercel pull --yes --environment=production --token="${{ secrets.VERCEL_TOKEN }}"
-
-      - name: Build
-        if: steps.guard.outputs.ready == 'true'
-        run: vercel build --prod --token="${{ secrets.VERCEL_TOKEN }}"
-
-      - name: Deploy
-        if: steps.guard.outputs.ready == 'true'
-        run: vercel deploy --prebuilt --prod --token="${{ secrets.VERCEL_TOKEN }}"

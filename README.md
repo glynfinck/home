@@ -130,7 +130,9 @@ These run in CI on every push and pull request (see below).
 
 ## Continuous integration (GitHub Actions)
 
-`.github/workflows/ci.yml` runs three jobs:
+Deploys are handled by **Vercel's Git integration** (production branch =
+`main`). GitHub Actions (`.github/workflows/ci.yml`) owns testing and database
+migrations, in two jobs:
 
 - **verify** (every PR + push) — spins up a throwaway Supabase inside the
   runner, applies migrations + seed, then runs lint, typecheck, the Vitest
@@ -140,38 +142,42 @@ These run in CI on every push and pull request (see below).
 - **migrate** (push to `main` only) — `supabase db push` to the production
   project. Additive, tracked, transactional; it **never** resets or seeds
   prod. Logs `migration list` + `db push --dry-run` before applying.
-- **deploy** (after migrate) — builds and ships to Vercel via the CLI.
 
 `db reset` (destructive) only ever runs against the disposable runner
 database in **verify** — it has no production credentials and cannot reach the
 live project. Production only receives additive `db push` migrations, so
 existing data is never wiped.
 
-Both production jobs **skip cleanly until their secrets exist**, so your first
-push is green. Add these repo secrets to turn migrate + deploy on:
+`migrate` **skips cleanly until its secrets exist**, so your first push is
+green. Add these repo secrets to enable automatic migrations:
 
 | secret | where to get it |
 | --- | --- |
 | `SUPABASE_ACCESS_TOKEN` | supabase.com → Account → Access Tokens |
 | `SUPABASE_PROJECT_REF` | the `xxxx` in `xxxx.supabase.co` |
 | `SUPABASE_DB_PASSWORD` | the DB password set when creating the project |
-| `VERCEL_TOKEN` | vercel.com → Account Settings → Tokens |
-| `VERCEL_ORG_ID` | `.vercel/project.json` after `vercel link` |
-| `VERCEL_PROJECT_ID` | same |
 
 ```bash
 gh secret set SUPABASE_ACCESS_TOKEN
 gh secret set SUPABASE_PROJECT_REF
 gh secret set SUPABASE_DB_PASSWORD
-gh secret set VERCEL_TOKEN
-gh secret set VERCEL_ORG_ID
-gh secret set VERCEL_PROJECT_ID
 ```
 
-Since Actions is now the deployer, disable Vercel's own Git auto-deploy
-(Vercel → Project → Settings → Git) to avoid double deploys. The five runtime
-env vars still live in the Vercel project — `vercel pull` reads them at deploy
-time; they are not duplicated as GitHub secrets.
+### Vercel deploy settings
+
+- The five runtime env vars (Supabase URL/keys, `REVALIDATE_SECRET`,
+  `NEXT_PUBLIC_SITE_URL`) must be set in the Vercel project (Settings →
+  Environment Variables) — Vercel's build fetches Supabase at build time, so a
+  missing var fails the build.
+- **Production deploys** happen automatically on push to `main`.
+- To **skip preview deploys on PRs** (deploy only when `main` changes), set
+  Vercel → Project → Settings → Git → **Ignored Build Step** to:
+
+  ```bash
+  bash -c 'if [ "$VERCEL_GIT_COMMIT_REF" = "main" ]; then exit 1; else exit 0; fi'
+  ```
+
+  (exit 1 = build, exit 0 = skip — so only `main` builds.)
 
 ## Project layout
 
