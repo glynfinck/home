@@ -5,9 +5,11 @@ import { FileUp, ImageUp, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { createClient } from "@/lib/supabase/client";
-import { formatBytes } from "@/lib/format";
+import { formatBytes, slugify } from "@/lib/format";
+import { MEDIA_IMAGE_ACCEPT, uploadToMediaBucket } from "@/lib/media";
 
 /** Direct browser upload to the public `media` bucket (admin storage RLS). */
 export function ImageUploadField({
@@ -25,15 +27,7 @@ export function ImageUploadField({
   async function upload(file: File) {
     setUploading(true);
     try {
-      const supabase = createClient();
-      const ext = file.name.split(".").pop()?.toLowerCase() || "png";
-      const path = `${prefix}/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage
-        .from("media")
-        .upload(path, file, { upsert: false, contentType: file.type });
-      if (error) throw error;
-      const { data } = supabase.storage.from("media").getPublicUrl(path);
-      onChange(data.publicUrl);
+      onChange(await uploadToMediaBucket(file, prefix));
     } catch (error) {
       toast.error("Upload failed", {
         description: error instanceof Error ? error.message : undefined,
@@ -56,7 +50,7 @@ export function ImageUploadField({
       <input
         ref={inputRef}
         type="file"
-        accept="image/png,image/jpeg,image/webp,image/avif,image/gif"
+        accept={MEDIA_IMAGE_ACCEPT}
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
@@ -162,6 +156,73 @@ export function PdfUploadField({
           Stored in the private bucket — served via signed URLs.
         </span>
       )}
+    </div>
+  );
+}
+
+/**
+ * Resume URL with an upload path: PDFs go to the public `media` bucket and
+ * the stored URL carries a download filename, so the About page button saves
+ * the file instead of opening it. Pasting an external URL still works.
+ */
+export function ResumeUploadField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (url: string) => void;
+}) {
+  const [uploading, setUploading] = React.useState(false);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  async function upload(file: File) {
+    if (file.type !== "application/pdf") {
+      toast.error("Only PDF files are allowed");
+      return;
+    }
+    setUploading(true);
+    try {
+      const download = `${slugify(file.name.replace(/\.pdf$/i, "")) || "resume"}.pdf`;
+      onChange(await uploadToMediaBucket(file, "resume", { download }));
+    } catch (error) {
+      toast.error("Upload failed", {
+        description: error instanceof Error ? error.message : undefined,
+      });
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="https://… or upload a PDF"
+        className="font-mono text-sm"
+      />
+      <input
+        ref={inputRef}
+        type="file"
+        accept="application/pdf"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) void upload(file);
+          e.target.value = "";
+        }}
+      />
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="shrink-0"
+        disabled={uploading}
+        onClick={() => inputRef.current?.click()}
+      >
+        {uploading ? <Spinner /> : <FileUp className="size-4" />}
+        {value ? "Replace" : "Upload"}
+      </Button>
     </div>
   );
 }

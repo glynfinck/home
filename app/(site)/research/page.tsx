@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { ResearchCard } from "@/components/site/research-card";
+import { TypedTextInView } from "@/components/site/typed-text-in-view";
 import { getPublishedPapers } from "@/lib/data/research";
 
 export const metadata: Metadata = {
@@ -15,7 +16,7 @@ export default async function ResearchPage() {
   return (
     <section className="mx-auto w-full max-w-5xl px-6 py-16">
       <p className="font-mono text-xs tracking-widest text-brand uppercase">
-        Research
+        <TypedTextInView text="Research" />
       </p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">
         Quant research

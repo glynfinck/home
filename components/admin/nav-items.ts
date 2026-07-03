@@ -1,10 +1,12 @@
 import {
   FileText,
   FolderKanban,
+  Images,
   LayoutDashboard,
   MessageSquare,
   PenSquare,
   Settings,
+  Tags,
 } from "lucide-react";
 
 /**
@@ -16,6 +18,8 @@ export const ADMIN_NAV = [
   { href: "/admin/posts", label: "Posts", icon: PenSquare },
   { href: "/admin/projects", label: "Projects", icon: FolderKanban },
   { href: "/admin/research", label: "Research", icon: FileText },
+  { href: "/admin/media", label: "Media", icon: Images },
+  { href: "/admin/kinds", label: "Tag icons", icon: Tags },
   { href: "/admin/comments", label: "Comments", icon: MessageSquare },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];

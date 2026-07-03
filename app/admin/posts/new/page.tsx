@@ -1,8 +1,11 @@
 import { PostEditor } from "@/components/admin/post-editor";
-import { adminListPapers } from "@/lib/data/admin";
+import { adminListPapers, adminTagOptions } from "@/lib/data/admin";
 
 export default async function NewPostPage() {
-  const papers = await adminListPapers();
+  const [papers, tagOptions] = await Promise.all([
+    adminListPapers(),
+    adminTagOptions("tags"),
+  ]);
 
   return (
     <PostEditor
@@ -18,6 +21,7 @@ export default async function NewPostPage() {
         paperIds: [],
       }}
       papers={papers.map((p) => ({ id: p.id, title: p.title }))}
+      tagOptions={tagOptions}
     />
   );
 }

@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
+import { MdxField } from "@/components/admin/mdx-field";
+import { ResumeUploadField } from "@/components/admin/upload-fields";
 import { saveSettings } from "@/lib/actions/admin";
 import type {
   ProfileSettings,
@@ -87,38 +89,40 @@ export function ProfileSettingsForm({ initial }: { initial: ProfileSettings }) {
             placeholder="Short hero subtext (plain text)."
           />
         </div>
+        <MdxField
+          id="about"
+          label={
+            <>
+              About{" "}
+              <span className="font-normal text-muted-foreground">
+                (MDX — rendered on the About page; falls back to Bio if empty)
+              </span>
+            </>
+          }
+          value={values.about}
+          onChange={(about) => set("about", about)}
+          rows={12}
+          placeholder={"## Optional heading\n\nYour story in MDX…"}
+        />
         <div className="grid gap-2">
-          <Label>
-            About{" "}
-            <span className="font-normal text-muted-foreground">
-              (MDX — rendered on the About page; falls back to Bio if empty)
-            </span>
-          </Label>
-          <Textarea
-            value={values.about}
-            onChange={(e) => set("about", e.target.value)}
-            rows={12}
-            className="font-mono text-sm leading-relaxed"
-            placeholder={"## Optional heading\n\nYour story in MDX…"}
+          <Label>Email</Label>
+          <Input
+            type="email"
+            value={values.email}
+            onChange={(e) => set("email", e.target.value)}
           />
         </div>
-        <div className="grid gap-2 sm:grid-cols-2 sm:gap-4">
-          <div className="grid gap-2">
-            <Label>Email</Label>
-            <Input
-              type="email"
-              value={values.email}
-              onChange={(e) => set("email", e.target.value)}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label>Resume URL</Label>
-            <Input
-              value={values.resume_url}
-              onChange={(e) => set("resume_url", e.target.value)}
-              placeholder="https://…"
-            />
-          </div>
+        <div className="grid gap-2">
+          <Label>
+            Resume{" "}
+            <span className="font-normal text-muted-foreground">
+              (PDF — the About page shows a download button when set)
+            </span>
+          </Label>
+          <ResumeUploadField
+            value={values.resume_url}
+            onChange={(url) => set("resume_url", url)}
+          />
         </div>
         <div>
           <Button

@@ -118,6 +118,7 @@ const projectSchema = z.object({
   slug: slugSchema,
   summary: z.string().trim().min(1, "Summary is required"),
   description: z.string().trim(),
+  content: z.string(),
   tech_stack: z.array(z.string().trim().min(1)).max(20),
   cover_image_url: z.string().trim(),
   github_url: z.string().trim(),
@@ -142,14 +143,15 @@ export async function upsertProject(
     const row = {
       ...fields,
       description: fields.description || null,
+      content: fields.content || null,
       cover_image_url: fields.cover_image_url || null,
       github_url: fields.github_url || null,
       live_url: fields.live_url || null,
     };
 
     const query = id
-      ? supabase.from("projects").update(row).eq("id", id).select("id")
-      : supabase.from("projects").insert(row).select("id");
+      ? supabase.from("projects").update(row).eq("id", id).select("id, slug")
+      : supabase.from("projects").insert(row).select("id, slug");
     const { data, error } = await query.single();
     if (error) {
       return {
@@ -159,6 +161,7 @@ export async function upsertProject(
     }
 
     updateTag(CACHE_TAGS.projects);
+    updateTag(CACHE_TAGS.project(data.slug));
     return { ok: true, id: data.id };
   } catch (error) {
     return failure(error, "Could not save project");
@@ -174,6 +177,60 @@ export async function deleteProject(id: string): Promise<ActionResult> {
     return { ok: true };
   } catch (error) {
     return failure(error, "Could not delete project");
+  }
+}
+
+/* ------------------------------ tag kinds ------------------------------- */
+
+const tagKindSchema = z.object({
+  id: z.string().uuid().optional(),
+  name: z.string().trim().min(1, "Tag name is required").max(40),
+  icon_url: z.string().trim().min(1, "Upload an icon first"),
+});
+
+export type TagKindInput = z.infer<typeof tagKindSchema>;
+
+export async function upsertTagKind(input: TagKindInput): Promise<ActionResult> {
+  try {
+    const { supabase } = await requireAdmin();
+    const parsed = tagKindSchema.safeParse(input);
+    if (!parsed.success) {
+      return { ok: false, error: parsed.error.issues[0].message };
+    }
+    const { id, ...fields } = parsed.data;
+    // Tags match kinds case-insensitively; stored lowercase like picker tags
+    const row = { ...fields, name: fields.name.toLowerCase() };
+
+    const query = id
+      ? supabase.from("tag_kinds").update(row).eq("id", id).select("id")
+      : supabase.from("tag_kinds").insert(row).select("id");
+    const { data, error } = await query.single();
+    if (error) {
+      return {
+        ok: false,
+        error:
+          error.code === "23505"
+            ? "That tag already has an icon"
+            : error.message,
+      };
+    }
+
+    updateTag(CACHE_TAGS.tagKinds);
+    return { ok: true, id: data.id };
+  } catch (error) {
+    return failure(error, "Could not save tag icon");
+  }
+}
+
+export async function deleteTagKind(id: string): Promise<ActionResult> {
+  try {
+    const { supabase } = await requireAdmin();
+    const { error } = await supabase.from("tag_kinds").delete().eq("id", id);
+    if (error) return { ok: false, error: error.message };
+    updateTag(CACHE_TAGS.tagKinds);
+    return { ok: true };
+  } catch (error) {
+    return failure(error, "Could not delete tag icon");
   }
 }
 

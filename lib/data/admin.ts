@@ -61,6 +61,74 @@ export async function adminGetProject(id: string) {
   return data;
 }
 
+export async function adminListTagKinds() {
+  unstable_noStore();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("tag_kinds")
+    .select("*")
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+export type TagField = "tech_stack" | "tags" | "topics";
+
+async function tagsInUse(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  field: TagField,
+): Promise<string[]> {
+  const query =
+    field === "tech_stack"
+      ? supabase.from("projects").select("tech_stack")
+      : field === "tags"
+        ? supabase.from("posts").select("tags")
+        : supabase.from("research_papers").select("topics");
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data as Record<TagField, string[]>[]).flatMap(
+    (row) => row[field] ?? [],
+  );
+}
+
+export type AdminTagOption = { name: string; iconUrl: string | null };
+
+/**
+ * Tag picker options for an editor field: every tag in use for that field
+ * plus every kind name, lowercased and sorted, with kind icons attached.
+ */
+export async function adminTagOptions(
+  field: TagField,
+): Promise<AdminTagOption[]> {
+  unstable_noStore();
+  const supabase = await createClient();
+  const [used, { data: kinds, error }] = await Promise.all([
+    tagsInUse(supabase, field),
+    supabase.from("tag_kinds").select("name, icon_url"),
+  ]);
+  if (error) throw error;
+
+  const icons = new Map(
+    kinds.map((kind) => [kind.name.toLowerCase(), kind.icon_url]),
+  );
+  const names = new Set([...used.map((tag) => tag.toLowerCase()), ...icons.keys()]);
+  return [...names]
+    .sort()
+    .map((name) => ({ name, iconUrl: icons.get(name) ?? null }));
+}
+
+/** Distinct tags in use across projects, posts and papers (lowercased, sorted). */
+export async function adminListContentTags(): Promise<string[]> {
+  unstable_noStore();
+  const supabase = await createClient();
+  const perField = await Promise.all([
+    tagsInUse(supabase, "tech_stack"),
+    tagsInUse(supabase, "tags"),
+    tagsInUse(supabase, "topics"),
+  ]);
+  return [...new Set(perField.flat().map((tag) => tag.toLowerCase()))].sort();
+}
+
 export async function adminListPapers() {
   unstable_noStore();
   const supabase = await createClient();

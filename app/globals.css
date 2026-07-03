@@ -163,6 +163,17 @@
   .prose-article :is(h2, h3, h4) > a {
     @apply text-inherit no-underline hover:underline;
   }
+
+  /* @apply prose rewrites the plugin's self-referential first/last-child
+     trims (.prose > :first-child) to target a nested .prose that never
+     exists here — restore them so MDX starting with a heading doesn't
+     carry the heading's full top margin. */
+  .prose-article > :first-child {
+    margin-top: 0;
+  }
+  .prose-article > :last-child {
+    margin-bottom: 0;
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -243,4 +254,109 @@
 /* KaTeX display math can overflow on small screens */
 .katex-display {
   @apply overflow-x-auto overflow-y-hidden py-2;
+}
+
+/* ---------------------------------------------------------------------------
+ * Terminal typing (components/site/typed-text.tsx)
+ *
+ * Grid-stack width reveal: an invisible sizer layer reserves the final width
+ * in every state (zero layout shift) while the visible layer types via a
+ * steps() width animation and carries the caret as a border-right riding the
+ * clip edge. content-box + calc(100% - caret) keeps every step on an exact
+ * character boundary; the caret gutter is reserved up front so it never
+ * shifts layout. Caret color is currentColor, so brand/destructive contexts
+ * tint it for free. Assumes a monospace font context.
+ * ------------------------------------------------------------------------- */
+@layer components {
+  .typed {
+    display: inline-grid;
+    white-space: nowrap;
+    --typed-caret-w: 0.55ch;
+    --typed-duration: calc(var(--typed-chars, 1) * var(--typed-speed, 70ms));
+  }
+
+  .typed > [aria-hidden] {
+    grid-area: 1 / 1;
+  }
+
+  .typed-sizer {
+    visibility: hidden;
+  }
+
+  .typed-text {
+    box-sizing: content-box;
+    border-right: var(--typed-caret-w) solid transparent;
+  }
+
+  .typed[data-caret="blink"] .typed-text {
+    border-right-color: currentColor;
+    animation: typed-caret-blink 1.25s step-end infinite;
+  }
+
+  .typed[data-typed="run"] .typed-text {
+    overflow: hidden;
+    animation: typed-reveal var(--typed-duration)
+      steps(var(--typed-chars, 1), end) var(--typed-delay, 150ms) both;
+  }
+
+  .typed[data-typed="run"][data-caret="blink"] .typed-text {
+    border-right-color: currentColor;
+    animation:
+      typed-reveal var(--typed-duration) steps(var(--typed-chars, 1), end)
+        var(--typed-delay, 150ms) both,
+      typed-caret-blink 1.25s step-end
+        calc(var(--typed-delay, 150ms) + var(--typed-duration)) infinite;
+  }
+
+  .typed[data-typed="run"][data-caret="hide"] .typed-text {
+    border-right-color: currentColor;
+    animation:
+      typed-reveal var(--typed-duration) steps(var(--typed-chars, 1), end)
+        var(--typed-delay, 150ms) both,
+      typed-caret-off 10ms linear
+        calc(var(--typed-delay, 150ms) + var(--typed-duration) + 700ms)
+        forwards;
+  }
+
+  @keyframes typed-reveal {
+    from {
+      width: 0;
+    }
+    to {
+      width: calc(100% - var(--typed-caret-w, 0.55ch));
+    }
+  }
+
+  /* mirrors tw-animate-css caret-blink timing so all carets pulse in sync */
+  @keyframes typed-caret-blink {
+    0%,
+    70%,
+    100% {
+      border-right-color: currentColor;
+    }
+    20%,
+    50% {
+      border-right-color: transparent;
+    }
+  }
+
+  @keyframes typed-caret-off {
+    to {
+      border-right-color: transparent;
+    }
+  }
+
+  /* Reduced motion: full text immediately, no typing. Blink mode keeps a
+     static caret; hide/none show none. !important because the run rules
+     above carry higher specificity and @media adds none. */
+  @media (prefers-reduced-motion: reduce) {
+    .typed .typed-text {
+      animation: none !important;
+      overflow: visible;
+    }
+    .typed[data-caret="hide"] .typed-text,
+    .typed[data-caret="none"] .typed-text {
+      border-right-color: transparent !important;
+    }
+  }
 }

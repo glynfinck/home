@@ -1,7 +1,11 @@
 import { notFound } from "next/navigation";
 
 import { PostEditor } from "@/components/admin/post-editor";
-import { adminGetPost, adminListPapers } from "@/lib/data/admin";
+import {
+  adminGetPost,
+  adminListPapers,
+  adminTagOptions,
+} from "@/lib/data/admin";
 
 export default async function EditPostPage({
   params,
@@ -9,9 +13,10 @@ export default async function EditPostPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [post, papers] = await Promise.all([
+  const [post, papers, tagOptions] = await Promise.all([
     adminGetPost(id),
     adminListPapers(),
+    adminTagOptions("tags"),
   ]);
   if (!post) notFound();
 
@@ -30,6 +35,7 @@ export default async function EditPostPage({
         paperIds: post.paperIds,
       }}
       papers={papers.map((p) => ({ id: p.id, title: p.title }))}
+      tagOptions={tagOptions}
     />
   );
 }

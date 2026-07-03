@@ -26,6 +26,31 @@ const getPublishedProjectsCached = unstable_cache(
 export const getPublishedProjects = (): Promise<Project[]> =>
   safeRead("projects", getPublishedProjectsCached, []);
 
+export function getProjectBySlug(slug: string): Promise<Project | null> {
+  return safeRead(
+    `project:${slug}`,
+    unstable_cache(
+      async (): Promise<Project | null> => {
+        const { data, error } = await supabasePublic
+          .from("projects")
+          .select("*")
+          .eq("slug", slug)
+          .eq("status", "published")
+          .maybeSingle();
+
+        if (error) throw error;
+        return data;
+      },
+      ["project", slug],
+      {
+        tags: [CACHE_TAGS.projects, CACHE_TAGS.project(slug)],
+        revalidate: 3600,
+      },
+    ),
+    null,
+  );
+}
+
 export async function getFeaturedProjects(limit = 3): Promise<Project[]> {
   const projects = await getPublishedProjects();
   return projects.filter((p) => p.featured).slice(0, limit);

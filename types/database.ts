@@ -225,6 +225,7 @@ export type Database = {
       }
       projects: {
         Row: {
+          content: string | null
           cover_image_url: string | null
           created_at: string
           description: string | null
@@ -241,6 +242,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          content?: string | null
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
@@ -257,6 +259,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          content?: string | null
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
@@ -337,6 +340,30 @@ export type Database = {
           key?: string
           updated_at?: string
           value?: Json
+        }
+        Relationships: []
+      }
+      tag_kinds: {
+        Row: {
+          created_at: string
+          icon_url: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          icon_url: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          icon_url?: string
+          id?: string
+          name?: string
+          updated_at?: string
         }
         Relationships: []
       }

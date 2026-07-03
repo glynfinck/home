@@ -46,7 +46,7 @@ export function MobileNav({ items }: { items: NavItem[] }) {
               <NavLink
                 key={item.href}
                 href={item.href}
-                className="text-3xl font-medium tracking-tight"
+                className="text-2xl font-medium tracking-tight"
                 onNavigate={() => setOpen(false)}
               >
                 {item.label}

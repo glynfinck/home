@@ -7,6 +7,7 @@ import { ExternalLink, Menu } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
   SheetContent,
@@ -26,8 +27,8 @@ function isActive(pathname: string, href: string) {
 }
 
 /**
- * The admin nav link list, rendered in both the desktop sidebar and the mobile
- * drawer. `onNavigate` lets the drawer close itself on selection.
+ * The admin nav link list for the desktop sidebar. The mobile overlay renders
+ * its own larger links from the same ADMIN_NAV source.
  */
 export function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -57,9 +58,13 @@ export function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-/** Hamburger + slide-in drawer that replaces the sidebar below `sm`. */
+/**
+ * Full-screen overlay that replaces the sidebar below `sm`, matching the
+ * public site's mobile nav.
+ */
 export function AdminMobileNav() {
   const [open, setOpen] = React.useState(false);
+  const pathname = usePathname();
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -68,21 +73,40 @@ export function AdminMobileNav() {
           <Menu className="size-4" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-64">
+      <SheetContent side="top" className="h-dvh w-full max-w-full">
         <SheetHeader>
           <SheetTitle className="text-left font-mono text-sm font-medium">
             glyn<span className="text-brand">.dev</span>
             <span className="ml-2 text-xs text-muted-foreground">admin</span>
           </SheetTitle>
         </SheetHeader>
-        <nav className="flex flex-1 flex-col gap-0.5 px-3">
-          <AdminNavLinks onNavigate={() => setOpen(false)} />
+        <nav className="flex flex-1 flex-col gap-6 px-6 pt-4">
+          {ADMIN_NAV.map(({ href, label }) => {
+            const active = isActive(pathname, href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                onClick={() => setOpen(false)}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "text-2xl font-medium tracking-tight transition-colors duration-150",
+                  active
+                    ? "text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {label}
+              </Link>
+            );
+          })}
         </nav>
-        <div className="border-t border-border/60 p-3">
+        <Separator />
+        <div className="flex items-center px-6 pb-6">
           <Link
             href="/"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+            className="flex items-center gap-2 text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground"
           >
             <ExternalLink className="size-4" /> View site
           </Link>

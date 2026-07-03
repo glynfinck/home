@@ -18,7 +18,8 @@ import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { DeleteButton } from "@/components/admin/delete-button";
-import { TagInput } from "@/components/admin/tag-input";
+import { MdxField } from "@/components/admin/mdx-field";
+import { TagPicker, type TagOption } from "@/components/admin/tag-picker";
 import { ImageUploadField } from "@/components/admin/upload-fields";
 import {
   deleteProject,
@@ -29,7 +30,13 @@ import { slugify } from "@/lib/format";
 
 type ProjectFormValues = Omit<ProjectInput, "id"> & { id?: string };
 
-export function ProjectEditor({ initial }: { initial: ProjectFormValues }) {
+export function ProjectEditor({
+  initial,
+  tagOptions,
+}: {
+  initial: ProjectFormValues;
+  tagOptions: TagOption[];
+}) {
   const router = useRouter();
   const [values, setValues] = React.useState(initial);
   const [slugTouched, setSlugTouched] = React.useState(Boolean(initial.id));
@@ -145,6 +152,20 @@ export function ProjectEditor({ initial }: { initial: ProjectFormValues }) {
           />
         </div>
 
+        <MdxField
+          id="content"
+          label={
+            <>
+              Write-up{" "}
+              <span className="font-normal text-muted-foreground">
+                (optional MDX, shown on the project page)
+              </span>
+            </>
+          }
+          value={values.content}
+          onChange={(content) => set("content", content)}
+        />
+
         <div className="grid gap-2">
           <Label>Cover image</Label>
           <ImageUploadField
@@ -156,10 +177,11 @@ export function ProjectEditor({ initial }: { initial: ProjectFormValues }) {
 
         <div className="grid gap-2">
           <Label>Tech stack</Label>
-          <TagInput
+          <TagPicker
             value={values.tech_stack}
             onChange={(tech) => set("tech_stack", tech)}
-            placeholder="Add technology and press Enter"
+            options={tagOptions}
+            placeholder="Search stack tags or type a new one"
           />
         </div>
 

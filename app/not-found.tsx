@@ -1,12 +1,15 @@
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { TypedText } from "@/components/site/typed-text";
 
 export default function RootNotFound() {
   return (
     <main className="flex flex-1 items-center">
       <section className="mx-auto w-full max-w-5xl px-6 py-32">
-        <p className="font-mono text-sm text-brand">404</p>
+        <p className="font-mono text-sm text-brand">
+          <TypedText text="404: no such file or directory" speedMs={45} />
+        </p>
         <h1 className="mt-4 text-3xl font-semibold tracking-tight">
           Page not found
         </h1>

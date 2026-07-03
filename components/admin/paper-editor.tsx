@@ -17,7 +17,8 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { DeleteButton } from "@/components/admin/delete-button";
-import { TagInput } from "@/components/admin/tag-input";
+import { MdxField } from "@/components/admin/mdx-field";
+import { TagPicker, type TagOption } from "@/components/admin/tag-picker";
 import { PdfUploadField } from "@/components/admin/upload-fields";
 import {
   deletePaper,
@@ -28,7 +29,13 @@ import { slugify } from "@/lib/format";
 
 type PaperFormValues = Omit<PaperInput, "id"> & { id?: string };
 
-export function PaperEditor({ initial }: { initial: PaperFormValues }) {
+export function PaperEditor({
+  initial,
+  tagOptions,
+}: {
+  initial: PaperFormValues;
+  tagOptions: TagOption[];
+}) {
   const router = useRouter();
   const [values, setValues] = React.useState(initial);
   const [slugTouched, setSlugTouched] = React.useState(Boolean(initial.id));
@@ -148,28 +155,27 @@ export function PaperEditor({ initial }: { initial: PaperFormValues }) {
 
         <div className="grid gap-2">
           <Label>Topics</Label>
-          <TagInput
+          <TagPicker
             value={values.topics}
             onChange={(topics) => set("topics", topics)}
-            placeholder="Add topic and press Enter"
+            options={tagOptions}
+            placeholder="Search topics or type a new one"
           />
         </div>
 
-        <div className="grid gap-2">
-          <Label htmlFor="content">
-            Web write-up{" "}
-            <span className="font-normal text-muted-foreground">
-              (optional MDX, shown on the paper page)
-            </span>
-          </Label>
-          <Textarea
-            id="content"
-            value={values.content}
-            onChange={(e) => set("content", e.target.value)}
-            rows={14}
-            className="font-mono text-sm leading-relaxed"
-          />
-        </div>
+        <MdxField
+          id="content"
+          label={
+            <>
+              Web write-up{" "}
+              <span className="font-normal text-muted-foreground">
+                (optional MDX, shown on the paper page)
+              </span>
+            </>
+          }
+          value={values.content}
+          onChange={(content) => set("content", content)}
+        />
       </div>
     </div>
   );
