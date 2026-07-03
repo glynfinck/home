@@ -16,15 +16,18 @@ import { getFeaturedProjects } from "@/lib/data/projects";
 import { getPublishedPosts } from "@/lib/data/posts";
 import { getPublishedPapers } from "@/lib/data/research";
 import { getProfileSettings, getSocialLinks } from "@/lib/data/settings";
+import { getTagIconMap } from "@/lib/data/tag-kinds";
 
 export default async function HomePage() {
-  const [profile, socialLinks, projects, posts, papers] = await Promise.all([
-    getProfileSettings(),
-    getSocialLinks(),
-    getFeaturedProjects(3),
-    getPublishedPosts(),
-    getPublishedPapers(),
-  ]);
+  const [profile, socialLinks, projects, posts, papers, tagIcons] =
+    await Promise.all([
+      getProfileSettings(),
+      getSocialLinks(),
+      getFeaturedProjects(3),
+      getPublishedPosts(),
+      getPublishedPapers(),
+      getTagIconMap(),
+    ]);
 
   const github = socialLinks.find((l) => l.icon === "github");
   const linkedin = socialLinks.find((l) => l.icon === "linkedin");
@@ -95,7 +98,11 @@ export default async function HomePage() {
           />
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {projects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
+              <ProjectCard
+                key={project.id}
+                project={project}
+                tagIcons={tagIcons}
+              />
             ))}
           </div>
         </section>

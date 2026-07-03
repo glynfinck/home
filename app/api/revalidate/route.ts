@@ -18,6 +18,7 @@ const TABLE_TAGS: Record<string, string[]> = {
   posts: [CACHE_TAGS.posts],
   research_papers: [CACHE_TAGS.research],
   post_papers: [CACHE_TAGS.posts, CACHE_TAGS.research],
+  tag_kinds: [CACHE_TAGS.tagKinds],
 };
 
 export async function POST(request: Request) {
@@ -43,6 +44,7 @@ export async function POST(request: Request) {
     if (!slug) continue;
     if (body.table === "posts") tags.add(CACHE_TAGS.post(slug));
     if (body.table === "research_papers") tags.add(CACHE_TAGS.paper(slug));
+    if (body.table === "projects") tags.add(CACHE_TAGS.project(slug));
   }
 
   // { expire: 0 } = immediate hard expiry — the very next request refetches.

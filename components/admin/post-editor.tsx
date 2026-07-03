@@ -20,7 +20,8 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { DeleteButton } from "@/components/admin/delete-button";
-import { TagInput } from "@/components/admin/tag-input";
+import { MdxField } from "@/components/admin/mdx-field";
+import { TagPicker, type TagOption } from "@/components/admin/tag-picker";
 import { ImageUploadField } from "@/components/admin/upload-fields";
 import {
   deletePost,
@@ -47,9 +48,11 @@ type PostFormValues = {
 export function PostEditor({
   initial,
   papers,
+  tagOptions,
 }: {
   initial: PostFormValues;
   papers: PaperOption[];
+  tagOptions: TagOption[];
 }) {
   const router = useRouter();
   const [values, setValues] = React.useState<PostFormValues>(initial);
@@ -171,25 +174,29 @@ export function PostEditor({
 
         <div className="grid gap-2">
           <Label>Tags</Label>
-          <TagInput value={values.tags} onChange={(tags) => set("tags", tags)} />
-        </div>
-
-        <div className="grid gap-2">
-          <Label htmlFor="content">
-            Content{" "}
-            <span className="font-normal text-muted-foreground">
-              (MDX — GFM, $math$, &lt;Callout&gt;, &lt;PaperCard slug=&quot;…&quot; /&gt;)
-            </span>
-          </Label>
-          <Textarea
-            id="content"
-            value={values.content}
-            onChange={(e) => set("content", e.target.value)}
-            rows={22}
-            className="font-mono text-sm leading-relaxed"
-            placeholder={"## Heading\n\nWrite MDX here…"}
+          <TagPicker
+            value={values.tags}
+            onChange={(tags) => set("tags", tags)}
+            options={tagOptions}
           />
         </div>
+
+        <MdxField
+          id="content"
+          label={
+            <>
+              Content{" "}
+              <span className="font-normal text-muted-foreground">
+                (MDX — GFM, $math$, &lt;Callout&gt;, &lt;PaperCard
+                slug=&quot;…&quot; /&gt;)
+              </span>
+            </>
+          }
+          value={values.content}
+          onChange={(content) => set("content", content)}
+          rows={22}
+          placeholder={"## Heading\n\nWrite MDX here…"}
+        />
 
         {papers.length > 0 ? (
           <div className="grid gap-2">

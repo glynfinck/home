@@ -163,6 +163,17 @@
   .prose-article :is(h2, h3, h4) > a {
     @apply text-inherit no-underline hover:underline;
   }
+
+  /* @apply prose rewrites the plugin's self-referential first/last-child
+     trims (.prose > :first-child) to target a nested .prose that never
+     exists here — restore them so MDX starting with a heading doesn't
+     carry the heading's full top margin. */
+  .prose-article > :first-child {
+    margin-top: 0;
+  }
+  .prose-article > :last-child {
+    margin-bottom: 0;
+  }
 }
 
 /* ---------------------------------------------------------------------------

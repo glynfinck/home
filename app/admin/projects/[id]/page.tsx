@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { ProjectEditor } from "@/components/admin/project-editor";
-import { adminGetProject } from "@/lib/data/admin";
+import { adminGetProject, adminTagOptions } from "@/lib/data/admin";
 
 export default async function EditProjectPage({
   params,
@@ -9,17 +9,22 @@ export default async function EditProjectPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const project = await adminGetProject(id);
+  const [project, tagOptions] = await Promise.all([
+    adminGetProject(id),
+    adminTagOptions("tech_stack"),
+  ]);
   if (!project) notFound();
 
   return (
     <ProjectEditor
+      tagOptions={tagOptions}
       initial={{
         id: project.id,
         title: project.title,
         slug: project.slug,
         summary: project.summary,
         description: project.description ?? "",
+        content: project.content ?? "",
         tech_stack: project.tech_stack,
         cover_image_url: project.cover_image_url ?? "",
         github_url: project.github_url ?? "",

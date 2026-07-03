@@ -15,13 +15,18 @@ import { PaperCard } from "@/components/site/mdx/paper-card";
  * must never receive user-generated content (comments render as plain text).
  */
 
-const components = {
+export const mdxComponents = {
   Callout,
   Figure,
   PaperCard,
 };
 
-const options = {
+export const mdxOptions = {
+  // next-mdx-remote v6 strips JSX expressions ({...}) by default as a
+  // sandbox for untrusted content. This pipeline is admin-only (see above),
+  // so restore full MDX semantics — numeric props like width={320} included.
+  // blockDangerousJS stays on (blocks eval/process/etc.) as defense in depth.
+  blockJS: false,
   mdxOptions: {
     remarkPlugins: [remarkGfm, remarkMath],
     rehypePlugins: [
@@ -44,7 +49,11 @@ const options = {
 export function Mdx({ source }: { source: string }) {
   return (
     <div className="prose-article">
-      <MDXRemote source={source} components={components} options={options} />
+      <MDXRemote
+        source={source}
+        components={mdxComponents}
+        options={mdxOptions}
+      />
     </div>
   );
 }

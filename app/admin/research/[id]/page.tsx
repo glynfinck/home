@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { PaperEditor } from "@/components/admin/paper-editor";
-import { adminGetPaper } from "@/lib/data/admin";
+import { adminGetPaper, adminTagOptions } from "@/lib/data/admin";
 
 export default async function EditPaperPage({
   params,
@@ -9,11 +9,15 @@ export default async function EditPaperPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const paper = await adminGetPaper(id);
+  const [paper, tagOptions] = await Promise.all([
+    adminGetPaper(id),
+    adminTagOptions("topics"),
+  ]);
   if (!paper) notFound();
 
   return (
     <PaperEditor
+      tagOptions={tagOptions}
       initial={{
         id: paper.id,
         title: paper.title,

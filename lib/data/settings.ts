@@ -16,8 +16,10 @@ export const CACHE_TAGS = {
   projects: "projects",
   posts: "posts",
   research: "research",
+  tagKinds: "tag-kinds",
   post: (slug: string) => `post:${slug}`,
   paper: (slug: string) => `paper:${slug}`,
+  project: (slug: string) => `project:${slug}`,
 } as const;
 
 const getRawSettingsCached = unstable_cache(
