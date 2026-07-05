@@ -27,7 +27,6 @@ describe("revalidate webhook auth", () => {
 });
 
 // Admin-route RBAC across user types lives in rbac.test.ts.
-
 describe("oauth callback", () => {
   it("redirects to the error state when no code is present", async () => {
     const res = await fetch(`${BASE}/auth/callback`, { redirect: "manual" });
