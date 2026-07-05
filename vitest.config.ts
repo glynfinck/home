@@ -1,3 +1,5 @@
+import { fileURLToPath } from "node:url";
+
 import { config as loadEnv } from "dotenv";
 import { defineConfig } from "vitest/config";
 
@@ -6,12 +8,26 @@ import { defineConfig } from "vitest/config";
 // the test workers (see tests/setup.ts).
 loadEnv({ path: ".env.local" });
 
+// Resolve the "@/..." import alias the app uses (see tsconfig paths) so unit
+// tests can import app modules the same way the app does.
+const rootDir = fileURLToPath(new URL(".", import.meta.url));
+
 export default defineConfig({
   test: {
     // Integration + e2e share one local database — keep them serial so they
     // never race on rows or the dev server port.
     fileParallelism: false,
     projects: [
+      {
+        // Pure logic + component-contract tests. No database or server, so
+        // this project runs standalone: `npm run test:unit`.
+        resolve: { alias: { "@": rootDir } },
+        test: {
+          name: "unit",
+          include: ["tests/unit/**/*.test.{ts,tsx}"],
+          environment: "node",
+        },
+      },
       {
         test: {
           name: "integration",
