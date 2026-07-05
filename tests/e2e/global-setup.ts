@@ -45,16 +45,32 @@ export default async function () {
   const server: ChildProcess = spawn("npm", ["run", "start"], {
     env: process.env,
     stdio: "ignore",
+    // Own process group so teardown can signal `npm` AND its `next start`
+    // child together (see stop()).
+    detached: true,
   });
+
+  // `npm run start` spawns `next start` as a child. A bare server.kill() only
+  // reaps npm and orphans next, which keeps port 3000 bound — enough to break
+  // the next CI step (the Playwright browser suite) since it can't rebind.
+  // Killing the whole process group releases the port immediately.
+  const stop = () => {
+    try {
+      if (server.pid) process.kill(-server.pid, "SIGKILL");
+      else server.kill("SIGKILL");
+    } catch {
+      server.kill("SIGKILL");
+    }
+  };
 
   try {
     await waitForServer(90_000);
   } catch (err) {
-    server.kill("SIGKILL");
+    stop();
     throw err;
   }
 
   return async () => {
-    server.kill("SIGTERM");
+    stop();
   };
 }
