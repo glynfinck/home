@@ -26,16 +26,7 @@ describe("revalidate webhook auth", () => {
   });
 });
 
-describe("admin mdx-preview auth", () => {
-  it("401s an unauthenticated preview request", async () => {
-    const res = await fetch(`${BASE}/admin/mdx-preview`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ source: "# hello" }),
-    });
-    expect(res.status).toBe(401);
-  });
-});
+// Admin-route RBAC across user types lives in rbac.test.ts.
 
 describe("oauth callback", () => {
   it("redirects to the error state when no code is present", async () => {
