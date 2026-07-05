@@ -33,6 +33,11 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # Pure logic + component-contract tests. No database or server needed,
+      # so they run before Supabase spins up for fast failure.
+      - name: Unit tests
+        run: npm run test:unit
+
       - uses: supabase/setup-cli@v1
         with:
           version: latest
@@ -64,6 +69,15 @@ jobs:
 
       - name: End-to-end tests
         run: npm run test:e2e
+
+      # Browser smokes under WebKit (mobile Safari engine) — catches CSS/layout
+      # regressions the HTTP e2e can't see, e.g. the typewriter clip. Reuses the
+      # build above; Playwright boots its own `next start` against local Supabase.
+      - name: Install Playwright (WebKit)
+        run: npx playwright install --with-deps webkit
+
+      - name: Browser tests (WebKit)
+        run: npm run test:browser
 
       - name: Stop Supabase
         if: always()
