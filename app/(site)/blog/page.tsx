@@ -9,7 +9,7 @@ import { getAllTags, getPublishedPosts } from "@/lib/data/posts";
 export const metadata: Metadata = {
   title: "Blog",
   description:
-    "Writing on quantitative finance, markets, and software engineering.",
+    "Writing on software engineering, research, and the experiments in between.",
 };
 
 export default async function BlogPage() {
@@ -22,7 +22,7 @@ export default async function BlogPage() {
       </p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">Writing</h1>
       <p className="mt-3 text-muted-foreground">
-        Quantitative finance, markets, and software engineering.
+        Software engineering, research, and the experiments in between.
       </p>
 
       {tags.length > 0 ? (

@@ -1,6 +1,6 @@
 # glyn.dev
 
-Personal brand site: portfolio, blog, and quant research hub. Fully
+Personal brand site: portfolio, blog, and research hub. Fully
 data-driven — content lives in Supabase and updates go live **without a
 redeploy**.
 

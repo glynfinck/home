@@ -7,7 +7,7 @@ import { getPublishedPapers } from "@/lib/data/research";
 export const metadata: Metadata = {
   title: "Research",
   description:
-    "Quantitative research write-ups — signals, backtests, and market structure. PDFs freely available.",
+    "Research write-ups and empirical studies. Every paper is a free PDF.",
 };
 
 export default async function ResearchPage() {
@@ -19,11 +19,11 @@ export default async function ResearchPage() {
         <TypedTextInView text="Research" />
       </p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-        Quant research
+        Research
       </h1>
       <p className="mt-3 max-w-2xl text-muted-foreground">
-        Strategy write-ups and empirical studies. Every paper is a free PDF —
-        no sign-up required.
+        Write-ups and empirical studies. Every paper is a free PDF, no sign-up
+        required.
       </p>
       <div className="mt-10 grid gap-4 sm:grid-cols-2">
         {papers.map((paper) => (
