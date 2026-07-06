@@ -8,8 +8,8 @@ insert into public.site_settings (key, value) values
     'profile',
     jsonb_build_object(
       'name', 'Glyn Finck',
-      'headline', 'Software engineer & quant researcher.',
-      'bio', 'I build trading systems and data infrastructure, and write about quantitative finance, markets, and software engineering.',
+      'headline', 'Software engineer, learning in the open.',
+      'bio', 'I''m a software engineer sharing the tools I build and the experiments I''m working through, methods included.',
       'location', 'Canada',
       'email', 'glynfinck@gmail.com',
       'resume_url', ''
@@ -29,7 +29,7 @@ insert into public.site_settings (key, value) values
     jsonb_build_object(
       'title_template', '%s · glyn.dev',
       'default_title', 'Glyn Finck · glyn.dev',
-      'description', 'Software engineer & quant researcher. Projects, blog, and quantitative research.',
+      'description', 'Glyn Finck is a software engineer building and researching in the open. Projects, engineering write-ups, and experiments.',
       'url', 'https://glyn.dev'
     )
   )
@@ -63,7 +63,7 @@ values
     'glyn-dev',
     'glyn.dev',
     'This site: a data-driven personal platform built with Next.js, Supabase, and shadcn/ui.',
-    'Portfolio, blog, and quant research hub. Content lives in Postgres, PDFs in private storage served via signed URLs, comments via Supabase Auth, and every page updates without a redeploy thanks to tag-based revalidation.',
+    'Portfolio, blog, and research hub. Content lives in Postgres, PDFs in private storage served via signed URLs, comments via Supabase Auth, and every page updates without a redeploy thanks to tag-based revalidation.',
     array['Next.js', 'TypeScript', 'Supabase', 'Tailwind CSS'],
     'https://github.com/glynfinck',
     'https://glyn.dev',
@@ -89,7 +89,7 @@ values
     'hello-world',
     'Hello, world',
     'Why I built glyn.dev, what it runs on, and what I plan to write about.',
-    E'Welcome to glyn.dev — my corner of the internet for projects, writing, and quantitative research.\n\n## Why this site exists\n\nI wanted a single place that serves as portfolio, blog, and research hub — one that I can update from a dashboard without redeploying code.\n\n<Callout type="info">\nEverything you see here is data-driven: posts, projects, and even the bio on the home page live in Postgres.\n</Callout>\n\n## The stack\n\n```ts\nconst stack = {\n  frontend: "Next.js (App Router)",\n  styling: "Tailwind CSS + shadcn/ui",\n  backend: "Supabase (Postgres + Auth + Storage)",\n  deploy: "Vercel",\n};\n```\n\n## What''s next\n\nQuant strategy write-ups with the math included, like the expected return of a simple momentum signal:\n\n$$\n\\mathbb{E}[r_{t+1}] = \\alpha + \\beta \\, \\text{mom}_{t} + \\varepsilon_t\n$$\n\nSubscribe to the RSS feed if you want to follow along.',
+    E'Welcome to glyn.dev — my corner of the internet for projects, writing, and research.\n\n## Why this site exists\n\nI wanted a single place that serves as portfolio, blog, and research hub — one that I can update from a dashboard without redeploying code.\n\n<Callout type="info">\nEverything you see here is data-driven: posts, projects, and even the bio on the home page live in Postgres.\n</Callout>\n\n## The stack\n\n```ts\nconst stack = {\n  frontend: "Next.js (App Router)",\n  styling: "Tailwind CSS + shadcn/ui",\n  backend: "Supabase (Postgres + Auth + Storage)",\n  deploy: "Vercel",\n};\n```\n\n## What''s next\n\nResearch write-ups with the math included, like the expected return of a simple momentum signal:\n\n$$\n\\mathbb{E}[r_{t+1}] = \\alpha + \\beta \\, \\text{mom}_{t} + \\varepsilon_t\n$$\n\nSubscribe to the RSS feed if you want to follow along.',
     array['meta', 'engineering'],
     'published',
     now() - interval '2 days',

@@ -45,3 +45,6 @@ next-env.d.ts
 /playwright-report
 /blob-report
 /playwright/.cache
+
+# supabase: local-only SQL snippets pasted into the prod SQL editor
+/supabase/snippets

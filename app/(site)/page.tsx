@@ -133,7 +133,7 @@ export default async function HomePage() {
           <div className="mx-auto w-full max-w-5xl px-6 py-20">
             <SectionHeading
               label="Research"
-              title="Quant research"
+              title="Recent research"
               href="/research"
               hrefLabel="All papers"
             />
