@@ -31,18 +31,18 @@ export default async function AdminLayout({
   if (!profile?.is_admin) redirect("/");
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-dvh overflow-hidden">
       <aside className="hidden w-52 shrink-0 flex-col border-r border-border/60 sm:flex">
-        <div className="flex h-14 items-center border-b border-border/60 px-5">
+        <div className="flex h-14 shrink-0 items-center border-b border-border/60 px-5">
           <Link href="/admin" className="font-mono text-sm font-medium">
             glyn<span className="text-brand">.dev</span>
             <span className="ml-2 text-xs text-muted-foreground">admin</span>
           </Link>
         </div>
-        <nav className="flex flex-1 flex-col gap-0.5 p-3">
+        <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3">
           <AdminNavLinks />
         </nav>
-        <div className="border-t border-border/60 p-3">
+        <div className="shrink-0 border-t border-border/60 p-3">
           <Link
             href="/"
             className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
@@ -52,7 +52,7 @@ export default async function AdminLayout({
         </div>
       </aside>
 
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 overflow-y-auto">
         {/* Mobile top bar */}
         <div className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-4 backdrop-blur-md sm:hidden">
           <Link href="/admin" className="font-mono text-sm font-medium">
