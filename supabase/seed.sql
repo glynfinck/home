@@ -320,8 +320,6 @@ Two weeks after shelving this strategy, I pointed the same harness at a differen
 I set out to extract alpha from mean reversion. What I actually built was the ability to find out, quickly, honestly, and at scale, whether *any* strategy is real. It took losing one I loved to learn that the second thing is worth more.
 
 The full derivations, tables, and robustness checks are in the paper below.
-
-<PaperCard slug="ou-pairs-limits-of-arbitrage" />
 $mdx$,
     array['quant', 'statarb', 'crypto', 'pairs-trading', 'research'],
     'published',
