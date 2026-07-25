@@ -3,7 +3,9 @@ import { compileMDX } from "next-mdx-remote/rsc";
 
 import {
   CalloutPreview,
+  ChartPreview,
   PaperCardPreview,
+  SidenotePreview,
 } from "@/components/admin/preview-components";
 import { Figure } from "@/components/site/mdx/figure";
 import { requireAdmin } from "@/lib/actions/guard";
@@ -34,8 +36,10 @@ export async function POST(request: Request) {
       source: body.source,
       components: {
         Callout: CalloutPreview,
+        Chart: ChartPreview,
         Figure,
         PaperCard: PaperCardPreview,
+        Sidenote: SidenotePreview,
       },
       options: mdxOptions,
     });

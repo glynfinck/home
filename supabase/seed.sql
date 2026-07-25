@@ -1,5 +1,30 @@
 -- =============================================================================
 -- glyn.dev — local development seed data
+--
+-- Mirrors the published content on https://glyn.dev so local looks like prod,
+-- and adds the fixtures the test suite and the interactive features need.
+--
+-- Two classes of row live here:
+--
+--   * Production mirror — the projects, posts, and paper that are actually
+--     live. Slugs match prod exactly (verified against glyn.dev/sitemap.xml),
+--     so a local page and its production counterpart share a URL.
+--   * Test fixtures — `hello-world`, `draft-example`, `momentum-signal-decay`,
+--     `momentum-decay-crypto`, `draft-paper`. These are NOT on prod. They are
+--     referenced by tests/integration/rls.test.ts and tests/e2e/site.test.ts,
+--     so removing them breaks the suite.
+--
+-- Article bodies for the two production posts are ABRIDGED. The full text
+-- lives only in the production database; this is enough to exercise the MDX
+-- pipeline, the figures, sidenotes, and the table of contents locally.
+--
+-- Re-runnable: every statement upserts on its natural key.
+--
+-- ⚠️  ESCAPE CURRENCY IN MDX BODIES. remark-math reads `$...$` as inline math,
+--     so a sentence with two dollar amounts ("leaves $46 ... loses $1,496")
+--     silently becomes an equation and renders one character per line. Write
+--     `\$46` in prose. Display math (`$$...$$`) is unaffected, and plain-text
+--     columns like `research_papers.abstract` never reach remark-math.
 -- =============================================================================
 
 -- Site settings ---------------------------------------------------------------
@@ -10,9 +35,10 @@ insert into public.site_settings (key, value) values
       'name', 'Glyn Finck',
       'headline', 'Software engineer, learning in the open.',
       'bio', 'I''m a software engineer sharing the tools I build and the experiments I''m working through, methods included.',
-      'location', 'Canada',
+      'location', 'London, England',
       'email', 'glynfinck@gmail.com',
-      'resume_url', ''
+      'resume_url', '',
+      'about', E'I grew up in Vancouver, Canada, and I still spend as much time outdoors as London lets me.\n\nI got into mathematics and science at Rockridge Secondary, started at the University of Victoria, and an introductory C course turned out to be the thing that stuck. I transferred into Engineering Physics at UBC and drifted steadily toward software.\n\nSince 2022 I have been a systems developer at Connor Clark & Lunn Financial Group in London, building data infrastructure for investment management: high-volume ETL from market data vendors, KDB and .NET financial data services, and Python and Prefect adoption across teams. I built Prefectfg, an internal platform that turns open-source Prefect into a multi-tenant, self-hosted orchestration system.\n\nOutside work I write up the quantitative research I do on my own time, methods and failures included.'
     )
   ),
   (
@@ -35,140 +61,329 @@ insert into public.site_settings (key, value) values
   )
 on conflict (key) do update set value = excluded.value;
 
--- Projects ---------------------------------------------------------------------
+-- Projects --------------------------------------------------------------------
+-- The five projects live on glyn.dev/projects, in the same order.
 insert into public.projects
   (slug, title, summary, description, tech_stack, github_url, live_url, featured, sort_order, status)
 values
   (
-    'crypto-data-lake',
-    'Crypto Data Lake',
-    'A bronze/silver/gold data lake for historical crypto market data with Hive-partitioned Parquet and DuckDB query layers.',
-    'A layered data lake for OHLCV and market microstructure data. Raw exchange dumps land in bronze, get normalized into silver as Hive-partitioned Parquet, and are aggregated into gold research datasets. Query-ready via DuckDB with partition and row-group pruning.',
-    array['Python', 'DuckDB', 'Parquet', 'Pandas'],
-    'https://github.com/glynfinck',
-    null,
-    true, 1, 'published'
-  ),
-  (
-    'backtest-engine',
-    'Vectorized Backtest Engine',
-    'Event-driven and vectorized backtesting for systematic strategies with realistic cost and slippage models.',
-    'A backtesting framework supporting both vectorized research loops and event-driven execution simulation, with pluggable cost models, portfolio accounting, and walk-forward evaluation.',
-    array['Python', 'NumPy', 'Pandas'],
-    'https://github.com/glynfinck',
-    null,
-    true, 2, 'published'
-  ),
-  (
     'glyn-dev',
     'glyn.dev',
-    'This site: a data-driven personal platform built with Next.js, Supabase, and shadcn/ui.',
-    'Portfolio, blog, and research hub. Content lives in Postgres, PDFs in private storage served via signed URLs, comments via Supabase Auth, and every page updates without a redeploy thanks to tag-based revalidation.',
-    array['Next.js', 'TypeScript', 'Supabase', 'Tailwind CSS'],
-    'https://github.com/glynfinck',
+    'A data-driven personal platform (portfolio, blog, and research hub) built with Next.js 16, Supabase, and shadcn/ui, where every page updates without a redeploy.',
+    'This site. Content lives in Postgres as MDX and renders through React Server Components, so publishing is a database write rather than a deploy.',
+    array['Next.js', 'TypeScript', 'Supabase', 'Tailwind CSS', 'shadcn/ui', 'MDX', 'Vercel'],
+    'https://github.com/glynfinck/home',
     'https://glyn.dev',
-    true, 3, 'published'
+    true,
+    1,
+    'published'
+  ),
+  (
+    'graph-editor',
+    'Graph Editor',
+    'Draw a graph, write a traversal in real Python (networkx included), and watch every step animate with play, pause, and scrub. A ground-up rewrite of my 2021 prototype into a full product with accounts, saved graphs, and multi-file Python projects.',
+    'An interactive tool for visualising graph algorithms.',
+    array['Next.js', 'React', 'TypeScript', 'Python', 'Pyodide', 'Pixi.js', 'Supabase', 'Vercel'],
+    'https://github.com/glynfinck/graph-editor',
+    'https://graph-editor.glyn.dev',
+    true,
+    2,
+    'published'
+  ),
+  (
+    'recycling-robot',
+    'Autonomous Recycling Robot',
+    'An autonomous robot on NVIDIA Jetson that maps and navigates office spaces to collect plastic bottles.',
+    'Capstone project combining SLAM-based navigation with a YOLOv3 detector trained to find bottles in cluttered office scenes.',
+    array['Python', 'ROS', 'NVIDIA Jetson', 'YOLOv3', 'SLAM'],
+    'https://github.com/glynfinck/recycling-robot',
+    null,
+    false,
+    3,
+    'published'
+  ),
+  (
+    'calvin',
+    'CALVIN',
+    'A competition robot that follows tape, reads infrared beacons, grabs "agents" with a crane and claw, and ziplines them home.',
+    'Built for a first-year engineering physics robot competition, entirely on analog electronics and an Arduino-class board.',
+    array['Arduino', 'C++', 'TINAH Board', 'Robotics', 'Analog Electronics', 'CAD'],
+    'https://github.com/glynfinck/calvin',
+    null,
+    false,
+    4,
+    'published'
+  ),
+  (
+    'precision-os',
+    'Precision OS: VR Surgical Planning',
+    'A VR tool that lets surgeons view fractured bones from 3D CT scans inside an interactive skeleton, with a bone-classification algorithm to label the fragments.',
+    'Built during a co-op term at Precision OS.',
+    array['Unreal Engine 4', 'C++', 'MATLAB'],
+    null,
+    null,
+    false,
+    5,
+    'published'
   )
-on conflict (slug) do nothing;
+on conflict (slug) do update set
+  title = excluded.title,
+  summary = excluded.summary,
+  description = excluded.description,
+  tech_stack = excluded.tech_stack,
+  github_url = excluded.github_url,
+  live_url = excluded.live_url,
+  featured = excluded.featured,
+  sort_order = excluded.sort_order,
+  status = excluded.status;
 
--- Project write-ups (MDX shown on /projects/[slug]) ----------------------------
-update public.projects set content = E'## Why\n\nHistorical crypto data is scattered across exchanges, formats, and rate limits. Getting a clean daily OHLCV panel for a backtest should take one query, not an afternoon of glue code.\n\n## Architecture\n\n| Layer | Format | Purpose |\n| --- | --- | --- |\n| bronze | raw JSON/CSV dumps | exactly what the exchange returned |\n| silver | Hive-partitioned Parquet | normalized, query-ready |\n| gold | aggregated Parquet | research datasets and features |\n\nEverything downstream reads silver through DuckDB:\n\n```python title="query.py"\nimport duckdb\n\ncon = duckdb.connect()\npanel = con.sql("""\n    select symbol, ts, close\n    from read_parquet(''silver/ohlcv/**/*.parquet'', hive_partitioning = true)\n    where year = 2025 and symbol in (''BTC'', ''ETH'')\n""").df()\n```\n\n<Callout type="tip">\nPartition on `year` and `symbol` and DuckDB prunes both partitions and row groups, so most queries touch a fraction of the files.\n</Callout>\n\n## Lessons learned\n\n- Schema drift between exchanges is the real enemy; normalize early and validate at the silver boundary.\n- Parquet row-group size matters more than file count once you pass a few thousand files.'
-where slug = 'crypto-data-lake';
+-- Posts -----------------------------------------------------------------------
 
-update public.projects set content = E'## Design\n\nTwo execution paths share one portfolio accounting core:\n\n- **Vectorized** for research: whole-panel NumPy operations, seconds per run.\n- **Event-driven** for validation: bar-by-bar simulation with a full order lifecycle, used before anything ships.\n\n```python\nfrom engine import Backtest, momentum\n\nbt = Backtest(strategy=momentum(lookback=90), costs="realistic")\nresult = bt.run("2020-01-01", "2025-12-31")\nprint(result.sharpe, result.max_drawdown)\n```\n\n## Cost model\n\nFills pay half the spread plus square-root market impact:\n\n$$\nc = \\underbrace{\\tfrac{s}{2}}_{\\text{spread}} + \\eta \\, \\sigma \\sqrt{\\frac{q}{V}}\n$$\n\nwhere $q$ is order size, $V$ is daily volume, and $\\sigma$ is daily volatility.\n\n<Callout type="warning">\nThe vectorized path is deliberately pessimistic about fills. If a strategy only works under optimistic fill assumptions, it does not work.\n</Callout>'
-where slug = 'backtest-engine';
-
-update public.projects set content = E'## How it works\n\nEvery page on this site is data-driven: posts, projects, research papers, and even the home-page bio live in Postgres and render through one MDX pipeline.\n\n```ts\nconst stack = {\n  frontend: "Next.js App Router + Tailwind + shadcn/ui",\n  content: "MDX stored in Postgres, rendered server-side",\n  backend: "Supabase: Postgres, Auth, private Storage",\n};\n```\n\n## Publishing flow\n\n1. Edit content in the `/admin` dashboard (or straight in Supabase Studio).\n2. The save action calls `updateTag`, or a database webhook hits `/api/revalidate`.\n3. Tag-based revalidation expires exactly the pages that changed. No redeploys.\n\n<Callout type="info">\nThe write-up you are reading right now is a row in the `projects` table.\n</Callout>'
-where slug = 'glyn-dev';
-
--- Posts --------------------------------------------------------------------------
+-- 1. Production mirror: the pairs-trading post.
+--
+-- The body is abridged, but it deliberately exercises every MDX feature the
+-- site has: interactive figures, sidenotes, KaTeX, a titled + line-highlighted
+-- code block, a callout, and a paper embed. If a feature regresses, this post
+-- is where it shows up first.
 insert into public.posts
   (slug, title, excerpt, content, tags, status, published_at, reading_minutes)
 values
   (
-    'hello-world',
-    'Hello, world',
-    'Why I built glyn.dev, what it runs on, and what I plan to write about.',
-    E'Welcome to glyn.dev — my corner of the internet for projects, writing, and research.\n\n## Why this site exists\n\nI wanted a single place that serves as portfolio, blog, and research hub — one that I can update from a dashboard without redeploying code.\n\n<Callout type="info">\nEverything you see here is data-driven: posts, projects, and even the bio on the home page live in Postgres.\n</Callout>\n\n## The stack\n\n```ts\nconst stack = {\n  frontend: "Next.js (App Router)",\n  styling: "Tailwind CSS + shadcn/ui",\n  backend: "Supabase (Postgres + Auth + Storage)",\n  deploy: "Vercel",\n};\n```\n\n## What''s next\n\nResearch write-ups with the math included, like the expected return of a simple momentum signal:\n\n$$\n\\mathbb{E}[r_{t+1}] = \\alpha + \\beta \\, \\text{mom}_{t} + \\varepsilon_t\n$$\n\nSubscribe to the RSS feed if you want to follow along.',
-    array['meta', 'engineering'],
+    'the-mean-reversion-you-cant-trade',
+    'The mean reversion you can''t trade',
+    'I spent eleven months building an optimal-stopping pairs strategy on crypto. The math worked, the pipeline worked, and the edge turned out to live exactly where it cannot be harvested.',
+    $mdx$
+I spent eleven months on an optimal double-stopping pairs strategy for crypto. This is what it found, and why the finding is not a strategy.
+
+## The paper that took it over
+
+The setup is the classic one: model the spread between two cointegrated assets as an Ornstein-Uhlenbeck process, then solve for the entry and exit levels that maximise expected value. The spread follows
+
+$$
+dX_t = \theta(\mu - X_t)\,dt + \sigma\,dW_t
+$$
+
+and the optimal-stopping problem asks when to open and when to close.<Sidenote>The double-stopping formulation matters: solving entry and exit jointly gives materially different levels than solving exit alone and entering at a fixed z-score.</Sidenote>
+
+## Re-deriving it until it computed
+
+The value function involves confluent hypergeometric functions, and the naive form overflows for the parameter ranges crypto actually produces. Working with the ratio directly rather than the two functions separately keeps everything in range.
+
+```python title="ratio_trick.py" {6-9}
+import numpy as np
+from scipy.special import hyp1f1, gammaln
+
+def f_ratio(x, theta, mu, sigma):
+    """F'/F without ever materialising F, which overflows past |z| ~ 40."""
+    z = (x - mu) * np.sqrt(2 * theta) / sigma
+    a, b = 0.5, 0.5
+    num = hyp1f1(a + 1, b + 1, z**2) * 2 * z * a / b
+    return num / hyp1f1(a, b, z**2)
+```
+
+<Callout type="tip">
+Every reformulation was checked against a high-precision reference before it
+was allowed near the backtest. Relative error stayed under 1e-10 across the
+whole parameter grid.
+</Callout>
+
+## Building the machine
+
+4,950 candidate pairs, one-minute Kraken bars, a year of data. Rolling OU fits, entry and exit levels recomputed as parameters drift, and execution delayed by a random lag plus a volume-dependent lag so fills are not free.
+
+## The equity curve that looked beautiful
+
+Here is the whole backtest. The paper's baseline assumption is 2 basis points per side, and at that level it makes money.
+
+Drag the slider.
+
+<Chart src="/figures/pairs-equity.json" caption="The same 38,241 trades, priced at whatever fee you choose. The strategy I thought I had is the one at 2 bps." />
+
+The curve does not survive contact with a realistic fee. Break-even is 14.3 bps. Kraken's real maker tier is 14 bps, which leaves \$46 on the year; the taker tier is 24 bps, which loses \$1,496.
+
+## Three ways I lied to myself
+
+Look-ahead in the parameter fit, survivorship in the pair list, and a fee assumption nobody retail actually gets. The first two I fixed. The third is the post.
+
+## The finding
+
+The profit is not spread evenly across the universe. It concentrates in the least liquid leg.<Sidenote>Ranks are of the *less liquid* leg of each pair, by one-year quote volume, which is the binding constraint. The illiquid tail alone carries \$1,823 of the \$2,414 gross.</Sidenote>
+
+<Chart src="/figures/pairs-volume-rank.json" caption="Gross PnL by the less-liquid leg's volume rank. Negative in the majors. Just over 75% of the edge sits in the illiquid tail." />
+
+That is the whole result. The gross edge is an illiquidity premium, sitting exactly where spreads, borrow, and roughly \$14k of capacity make it unharvestable.
+
+## Trying to save it anyway
+
+| Hypothesis | Result |
+| --- | --- |
+| Other venues have better fees | Worse spreads eat the difference |
+| Cross-exchange widens the spread | Transfer latency kills it |
+| An ML filter can pick the good trades | No lift out of sample |
+| Size down and trade more pairs | Capacity was never the binding limit |
+
+## The part where I tell the truth
+
+A backtest that only works at fees you cannot get is not a strategy. It is a measurement of how much someone would have to be paid to provide liquidity in the tail.
+
+## What survived
+
+The pipeline, the derivation, and a much shorter list of things I take at face value.
+
+<PaperCard slug="ou-pairs-limits-of-arbitrage" />
+$mdx$,
+    array['quant', 'statarb', 'crypto', 'pairs-trading', 'research'],
     'published',
-    now() - interval '2 days',
-    3
+    timestamptz '2026-07-14 09:00:00+00',
+    12
   ),
+  -- 2. Production mirror: the AI post.
+  (
+    'ai-shines-on-defined-problems',
+    'AI shines on problems you''ve already defined',
+    'I took a side project I built by hand in 2021 and used AI to turn it into a product-level app in a few days.',
+    $mdx$
+In 2021 I hand-built a graph editor to teach myself React. In 2026 I rebuilt it with AI assistance in a few days, and the difference was not the typing speed.
+
+## The 2021 version
+
+A canvas, some nodes, a BFS that ran and animated. It worked, and it was a prototype in every way that matters: no accounts, no persistence, no way to write your own algorithm.
+
+## What changed
+
+The rebuild has accounts, saved graphs, multi-file Python projects, and a real playback engine. The reason it went quickly is not that the AI is clever. It is that I had already made every hard decision, five years earlier, by building the thing badly once.
+
+> The hard part of software is not writing code, it is deciding what to write.
+
+Fred Brooks called the essential complexity the part you cannot automate away. That still holds. What AI removed was the accidental complexity: the boilerplate, the config, the third rewrite of the same reducer.
+
+## Where it did not help
+
+Every place the design was still open. Asking for "a good playback API" produced plausible code that solved a problem I had not actually specified yet. The moment I wrote the frame format down, it became fast again.
+
+## The takeaway
+
+AI is leverage on a defined problem. If you cannot describe what you want precisely enough to review the answer, the leverage points the wrong way.
+$mdx$,
+    array['ai', 'engineering', 'projects'],
+    'published',
+    timestamptz '2026-07-06 09:00:00+00',
+    5
+  ),
+  -- 3. Test fixture (not on prod): tests/e2e/site.test.ts asserts this post
+  --    renders KaTeX, highlighted code, and a "Referenced research" block.
   (
     'momentum-signal-decay',
     'How fast do momentum signals decay?',
-    'A quick empirical look at signal decay for cross-sectional momentum, and what it means for rebalance frequency.',
-    $mdx$Momentum is one of the most robust anomalies in the literature — but how quickly does the signal decay once formed?
+    'Measuring the half-life of cross-sectional momentum in crypto, and what it implies for rebalance frequency.',
+    $mdx$
+A short fixture post that exercises the MDX pipeline.
 
-## Setup
+## The model
 
-We form a standard cross-sectional momentum signal and track its information coefficient over increasing lags:
+Signal strength decays roughly exponentially:
 
 $$
-\text{IC}(k) = \text{corr}\left(\text{mom}_t, \; r_{t+k}\right)
+s(t) = s_0 e^{-\lambda t}
 $$
 
-```python title="signal.py"
+## The code
+
+```python title="halflife.py"
 import numpy as np
-import pandas as pd
-from dataclasses import dataclass
 
-@dataclass
-class SignalConfig:
-    """Cross-sectional momentum configuration."""
-    lookback: int = 90   # formation window (days)
-    skip: int = 7        # skip the most recent week
-
-def momentum_signal(prices: pd.DataFrame, cfg: SignalConfig) -> pd.DataFrame:
-    # log-return momentum, skipping the most recent week
-    rets = np.log(prices).diff()
-    mom = rets.rolling(cfg.lookback).sum().shift(cfg.skip)
-    ranked = mom.rank(axis=1, pct=True) - 0.5
-    return ranked.div(ranked.abs().sum(axis=1), axis=0)
-
-ic = signal.corrwith(fwd_returns, axis=1).mean()
-print(f"mean IC: {ic:.4f}")
+def half_life(lmbda: float) -> float:
+    return np.log(2) / lmbda
 ```
 
-## Takeaway
-
-<Callout type="warning">
-Half-life matters more than raw IC: a strong signal that decays in days demands infrastructure a monthly rebalance never will.
-</Callout>
-
-The full write-up, with data and robustness checks, is in the linked research paper below.$mdx$,
+Full methodology is in the linked paper.
+$mdx$,
     array['quant', 'momentum', 'research'],
     'published',
-    now() - interval '1 day',
+    timestamptz '2026-07-01 09:00:00+00',
     6
   ),
+  -- 4. Test fixture (not on prod): RLS "published post is visible" case.
+  (
+    'hello-world',
+    'Hello, world',
+    'Why this site exists and what I plan to put on it.',
+    $mdx$
+A fixture post used by the RLS and view-counter tests.
+$mdx$,
+    array['meta', 'engineering'],
+    'published',
+    timestamptz '2026-06-28 09:00:00+00',
+    3
+  ),
+  -- 5. Test fixture (not on prod): RLS "draft is hidden" case.
   (
     'draft-example',
     'Draft: unpublished post',
     'This draft should never be visible to the public.',
-    E'If you can read this without being an admin, RLS is broken.',
+    $mdx$
+If you can read this without being an admin, RLS is broken.
+$mdx$,
     array['meta'],
     'draft',
     null,
     1
   )
-on conflict (slug) do nothing;
+on conflict (slug) do update set
+  title = excluded.title,
+  excerpt = excluded.excerpt,
+  content = excluded.content,
+  tags = excluded.tags,
+  status = excluded.status,
+  published_at = excluded.published_at,
+  reading_minutes = excluded.reading_minutes;
 
--- Research papers -------------------------------------------------------------------
+-- Research papers -------------------------------------------------------------
+--
+-- NOTE: `pdf_path` points at an object in the private `research` bucket. Local
+-- storage is empty on a fresh `supabase db reset`, so "Download PDF" 404s
+-- until you upload one through /admin/media. The e2e suite uploads its own
+-- sample for `momentum-decay-crypto` in tests/e2e/global-setup.ts.
 insert into public.research_papers
   (slug, title, abstract, content, pdf_path, topics, status, published_at)
 values
   (
+    'ou-pairs-limits-of-arbitrage',
+    'Optimal Mean-Reversion Pairs Trading in Cryptocurrency Markets: A Limits-of-Arbitrage Study',
+    'We implement an optimal double-stopping framework for cryptocurrency pairs on Kraken, analysing 4,950 symbol pairs at one-minute resolution over a year and 38,241 simulated trades. Special forms of the value function are derived so the problem computes at scale. Mean reversion is present in the data, generating $1,896 net profit at 2 basis points with an 81% win rate, but the gross edge is an illiquidity premium: it sits exactly where spreads, borrow, and roughly $14k of capacity make it unharvestable. At realistic fees the result turns negative, and alternative venues, cross-exchange execution, and machine-learning filters all fail to recover it.',
+    $mdx$
+## Overview
+
+The full derivation, data construction, and robustness checks are in the PDF. The headline numbers are reproduced in the accompanying post.
+
+## Method
+
+Spreads are modelled as an Ornstein-Uhlenbeck process and the entry and exit
+levels solved jointly as a double optimal-stopping problem, with parameters
+refit on a rolling window.
+
+## Result
+
+Break-even is 14.3 basis points per side. Every venue a retail participant can
+actually reach charges more than that.
+$mdx$,
+    'papers/ou-pairs-limits-of-arbitrage.pdf',
+    array['quant', 'arbitrage', 'cryptocurrency', 'mean-reversion', 'optimal-stopping'],
+    'published',
+    timestamptz '2026-07-14 09:00:00+00'
+  ),
+  -- Test fixture (not on prod): download + RLS cases.
+  (
     'momentum-decay-crypto',
     'Momentum Signal Decay in Crypto Markets',
     'We measure the decay profile of cross-sectional momentum signals across large-cap crypto assets, estimate signal half-lives, and derive implications for rebalance frequency and turnover-adjusted alpha.',
-    E'## Overview\n\nThis paper studies how quickly cross-sectional momentum information decays in crypto markets.\n\n## Key results\n\n- Signal half-life is materially shorter than in equities\n- Turnover-adjusted alpha peaks at intermediate rebalance horizons\n- Results are robust to universe construction and cost assumptions\n\nDownload the full PDF for methodology, data description, and robustness checks.',
+    E'## Overview\n\nThis paper studies how quickly cross-sectional momentum information decays in crypto markets.\n\n## Key results\n\n- Signal half-life is materially shorter than in equities\n- Turnover-adjusted alpha peaks at intermediate rebalance horizons\n- Results are robust to universe construction and cost assumptions',
     'papers/momentum-decay-crypto.pdf',
     array['momentum', 'crypto', 'signal-decay'],
     'published',
-    now() - interval '1 day'
+    timestamptz '2026-07-01 09:00:00+00'
   ),
+  -- Test fixture (not on prod): unpublished-download 404 case.
   (
     'draft-paper',
     'Draft: unpublished paper',
@@ -179,12 +394,23 @@ values
     'draft',
     null
   )
-on conflict (slug) do nothing;
+on conflict (slug) do update set
+  title = excluded.title,
+  abstract = excluded.abstract,
+  content = excluded.content,
+  pdf_path = excluded.pdf_path,
+  topics = excluded.topics,
+  status = excluded.status,
+  published_at = excluded.published_at;
 
--- Link the momentum post to the momentum paper ---------------------------------------
+-- Post <-> paper links ---------------------------------------------------------
 insert into public.post_papers (post_id, paper_id)
 select p.id, rp.id
-from public.posts p, public.research_papers rp
-where p.slug = 'momentum-signal-decay'
-  and rp.slug = 'momentum-decay-crypto'
+from public.posts p
+join public.research_papers rp on true
+where (p.slug, rp.slug) in (
+  ('the-mean-reversion-you-cant-trade', 'ou-pairs-limits-of-arbitrage'),
+  -- Required by tests/e2e/site.test.ts ("Referenced research" assertion).
+  ('momentum-signal-decay', 'momentum-decay-crypto')
+)
 on conflict do nothing;

@@ -382,3 +382,283 @@
     }
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Sidenotes (components/site/mdx/sidenote.tsx)
+ *
+ * Tufte-style margin notes. Below xl the note is collapsed behind its
+ * superscript number and revealed by a visually hidden checkbox; at xl it
+ * floats into the right margin and is always visible.
+ *
+ * `float` rather than absolute positioning: `clear: right` makes consecutive
+ * notes stack instead of overlapping, which absolute positioning cannot do
+ * without measuring. The margin column is created by the article grid in
+ * app/(site)/blog/[slug]/page.tsx.
+ *
+ * Numbering is a counter so authors never hand-number; inserting a note
+ * renumbers everything after it.
+ * ------------------------------------------------------------------------- */
+@layer components {
+  .prose-article {
+    counter-reset: sidenote;
+  }
+
+  .sidenote-ref {
+    counter-increment: sidenote;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .sidenote-ref::after {
+    content: counter(sidenote);
+    vertical-align: super;
+    font-size: 0.72em;
+    line-height: 0;
+    margin-inline-start: 0.12em;
+    color: var(--brand);
+  }
+
+  /* Focusable but invisible; the label is the visible control. */
+  .sidenote-ref input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    margin: 0;
+    pointer-events: none;
+  }
+
+  .sidenote-ref:has(input:focus-visible)::after {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  .sidenote {
+    display: none;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--muted-foreground);
+  }
+
+  .sidenote::before {
+    content: counter(sidenote);
+    vertical-align: super;
+    font-size: 0.72em;
+    line-height: 0;
+    margin-inline-end: 0.35em;
+    color: var(--brand);
+  }
+
+  .sidenote-ref:has(input:checked) + .sidenote {
+    display: block;
+    margin-block: 0.75rem;
+    border-inline-start: 2px solid var(--border);
+    padding-inline-start: 0.875rem;
+  }
+
+  @media (width >= 80rem) {
+    .sidenote {
+      display: block;
+      float: right;
+      clear: right;
+      width: 12rem;
+      /* Reaches into column 3 of the article grid: 2rem gap + 12rem of the
+         14rem rail. Keep in sync with the grid template in the post page. */
+      margin-right: -14rem;
+      margin-block: 0.25rem 1rem;
+      text-align: left;
+    }
+
+    /* The toggle has no job once the note is always visible; dropping it from
+       the a11y tree avoids offering a control that does nothing. */
+    .sidenote-ref input {
+      display: none;
+    }
+  }
+
+  @media print {
+    .sidenote {
+      display: block;
+      float: none;
+      width: auto;
+      margin: 0.5rem 0;
+      border-inline-start: 2px solid var(--border);
+      padding-inline-start: 0.75rem;
+    }
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Reading progress (components/site/reading-progress.tsx)
+ *
+ * Scroll-driven CSS animation, so there is no scroll listener and no client
+ * component. Hidden entirely where `animation-timeline` is unsupported,
+ * because a bar that never advances is worse than no bar.
+ * ------------------------------------------------------------------------- */
+@layer components {
+  .reading-progress {
+    display: none;
+  }
+
+  @supports (animation-timeline: scroll()) {
+    .reading-progress {
+      display: block;
+    }
+
+    .reading-progress-bar {
+      transform: scaleX(0);
+      animation: reading-progress-grow linear both;
+      animation-timeline: scroll(root block);
+    }
+  }
+
+  @keyframes reading-progress-grow {
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  /* A bar that races the scroll is motion the reader didn't ask for. */
+  @media (prefers-reduced-motion: reduce) {
+    .reading-progress {
+      display: none;
+    }
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Code block copy button (components/site/mdx/code-block.tsx)
+ *
+ * rehype-pretty-code owns the <figure>, so it can't carry Tailwind `group`
+ * classes; the hover/focus reveal is done here instead.
+ * ------------------------------------------------------------------------- */
+@layer components {
+  [data-rehype-pretty-code-figure] {
+    position: relative;
+  }
+
+  .code-copy {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    opacity: 1;
+  }
+
+  /* Pointer devices get the quieter reveal; touch keeps it visible because
+     there is no hover state to discover it with. */
+  @media (hover: hover) {
+    .code-copy {
+      opacity: 0;
+    }
+
+    [data-rehype-pretty-code-figure]:hover .code-copy,
+    [data-rehype-pretty-code-figure]:focus-within .code-copy {
+      opacity: 1;
+    }
+  }
+
+  /* A title bar sits where the button would; drop it below the tab. */
+  [data-rehype-pretty-code-title] ~ .code-copy {
+    top: 2.85rem;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Fee slider (components/site/mdx/chart/equity-chart.tsx)
+ *
+ * Native range input, restyled. Kept native so it keeps full keyboard
+ * support, screen-reader semantics, and platform touch targets for free.
+ * ------------------------------------------------------------------------- */
+@layer components {
+  .fee-slider {
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+    height: 1.5rem;
+  }
+
+  .fee-slider::-webkit-slider-runnable-track {
+    height: 3px;
+    border-radius: 999px;
+    background: var(--border);
+  }
+
+  .fee-slider::-moz-range-track {
+    height: 3px;
+    border-radius: 999px;
+    background: var(--border);
+  }
+
+  .fee-slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 1rem;
+    height: 1rem;
+    margin-top: -0.4rem;
+    border-radius: 999px;
+    background: var(--brand);
+    /* Surface ring, so the thumb stays legible over the track. */
+    border: 2px solid var(--card);
+  }
+
+  .fee-slider::-moz-range-thumb {
+    width: 1rem;
+    height: 1rem;
+    border-radius: 999px;
+    background: var(--brand);
+    border: 2px solid var(--card);
+  }
+
+  .fee-slider:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 4px;
+    border-radius: 999px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Print — articles are the thing people print, so strip the chrome and keep
+ * the figures, math, and code intact.
+ * ------------------------------------------------------------------------- */
+@media print {
+  header,
+  footer,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  html,
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  /* Anchors carry their destination, since a printed link is otherwise dead.
+     Skip in-page and heading-anchor links, which would just add noise. */
+  .prose-article a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    word-break: break-all;
+  }
+
+  .prose-article :is(h2, h3, h4) > a::after {
+    content: none;
+  }
+
+  /* Never break a figure, code block, or equation across pages. */
+  figure,
+  pre,
+  table,
+  .katex-display {
+    break-inside: avoid;
+  }
+
+  :is(h2, h3, h4) {
+    break-after: avoid;
+  }
+
+  pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+}

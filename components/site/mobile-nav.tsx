@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/sheet";
 import { AuthButton } from "@/components/site/auth-button";
 import { NavLink } from "@/components/site/nav-link";
+import { SearchTrigger } from "@/components/site/search-trigger";
 import { SignInDialog } from "@/components/site/sign-in-dialog";
 import { ThemeToggle } from "@/components/site/theme-toggle";
 import type { NavItem } from "@/lib/nav";
@@ -41,7 +42,10 @@ export function MobileNav({ items }: { items: NavItem[] }) {
               glyn<span className="text-brand">.dev</span>
             </SheetTitle>
           </SheetHeader>
-          <nav className="flex flex-1 flex-col gap-6 px-6 pt-4">
+          <div className="px-6 pt-4">
+            <SearchTrigger variant="full" onActivate={() => setOpen(false)} />
+          </div>
+          <nav className="flex flex-1 flex-col gap-6 px-6 pt-6">
             {items.map((item) => (
               <NavLink
                 key={item.href}
