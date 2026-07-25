@@ -5,7 +5,7 @@ import { scaleLinear } from "d3-scale";
 
 import { useChartSize } from "@/components/site/mdx/chart/use-chart-size";
 import { ChartFrame, DataTable } from "@/components/site/mdx/chart/chart-frame";
-import { PLOT_MARGIN, formatUsd, formatUsdCompact, type BarFigure } from "@/lib/chart";
+import { BAR_FORMATS, PLOT_MARGIN, type BarFigure } from "@/lib/chart";
 
 /**
  * Single-series column chart with a zero baseline.
@@ -24,6 +24,11 @@ export function BarChart({ figure }: { figure: BarFigure }) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { width, height } = useChartSize(containerRef);
+
+  // Values are not always money: a Sharpe ratio rendered as "$10" is wrong.
+  const fmt = BAR_FORMATS[figure.valueFormat ?? "usd"];
+  const formatValue = fmt.full;
+  const formatAxis = fmt.axis;
 
   const primary = figure.series[0];
   const secondary = figure.series[1];
@@ -72,8 +77,8 @@ export function BarChart({ figure }: { figure: BarFigure }) {
           ]}
           rows={labels.map((label, i) => [
             label,
-            formatUsd(primary.values[i]),
-            ...(secondary ? [formatUsd(secondary.values[i])] : []),
+            formatValue(primary.values[i]),
+            ...(secondary ? [formatValue(secondary.values[i])] : []),
             ...(figure.trades ? [figure.trades[i].toLocaleString("en-US")] : []),
           ])}
         />
@@ -89,7 +94,7 @@ export function BarChart({ figure }: { figure: BarFigure }) {
           style={{ maxWidth: "100%", height: "auto" }}
           role="img"
           aria-label={`${figure.title}. ${labels
-            .map((label, i) => `${label}: ${formatUsd(primary.values[i])}`)
+            .map((label, i) => `${label}: ${formatValue(primary.values[i])}`)
             .join(". ")}.`}
           className="outline-none"
         >
@@ -125,7 +130,7 @@ export function BarChart({ figure }: { figure: BarFigure }) {
               fontSize={11}
               fill="var(--muted-foreground)"
             >
-              {formatUsdCompact(tick)}
+              {formatAxis(tick)}
             </text>
           ))}
 
@@ -148,7 +153,7 @@ export function BarChart({ figure }: { figure: BarFigure }) {
                   fill="transparent"
                   tabIndex={0}
                   role="button"
-                  aria-label={`${label}: ${formatUsd(value)}`}
+                  aria-label={`${label}: ${formatValue(value)}`}
                   onPointerEnter={() => setHoverIndex(i)}
                   onPointerLeave={() => setHoverIndex(null)}
                   onFocus={() => setHoverIndex(i)}
@@ -204,14 +209,14 @@ export function BarChart({ figure }: { figure: BarFigure }) {
             }
           >
             <p className="font-mono text-sm font-medium tabular-nums text-foreground">
-              {formatUsd(primary.values[hoverIndex])}
+              {formatValue(primary.values[hoverIndex])}
             </p>
             <p className="mt-0.5 text-muted-foreground">
               {figure.x.label}: {labels[hoverIndex]}
             </p>
             {secondary ? (
               <p className="text-muted-foreground/80">
-                {secondary.label}: {formatUsd(secondary.values[hoverIndex])}
+                {secondary.label}: {formatValue(secondary.values[hoverIndex])}
               </p>
             ) : null}
             {figure.trades ? (

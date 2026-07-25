@@ -114,10 +114,12 @@ test.describe("command palette", () => {
 });
 
 test.describe("sidenotes", () => {
+  // Exercised on the fixture post: the production articles are mirrored
+  // verbatim in the seed, so test-only markup must not be added to them.
   test("collapse behind their marker on mobile and expand on tap", async ({
     page,
   }) => {
-    await page.goto(POST);
+    await page.goto("/blog/momentum-signal-decay");
 
     const note = page.locator("span.sidenote").first();
     // Below xl the note is hidden until its numbered marker is activated.
@@ -125,5 +127,41 @@ test.describe("sidenotes", () => {
 
     await page.locator("label.sidenote-ref").first().click();
     await expect(note).toBeVisible();
+  });
+});
+
+test.describe("table of contents", () => {
+  /**
+   * The navbar is sticky, so an un-offset anchor jump lands the heading at the
+   * viewport top and behind the bar. `scroll-margin-top` in globals.css is
+   * what keeps it visible, and nothing else would catch its removal.
+   */
+  test("a contents link lands the heading below the sticky navbar", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1400, height: 900 });
+    await page.goto(POST);
+
+    await page
+      .locator('nav[aria-labelledby="toc-heading"] a', {
+        hasText: "Building the machine",
+      })
+      .click();
+
+    await expect
+      .poll(async () =>
+        page.evaluate(() => {
+          const heading = [...document.querySelectorAll("h2")].find((h) =>
+            h.textContent?.includes("Building the machine"),
+          );
+          const header = document.querySelector("header");
+          if (!heading || !header) return -1;
+          return Math.round(
+            heading.getBoundingClientRect().top -
+              header.getBoundingClientRect().bottom,
+          );
+        }),
+      )
+      .toBeGreaterThanOrEqual(0);
   });
 });

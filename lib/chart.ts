@@ -64,17 +64,80 @@ export type EquityFigure = {
   winRate: { bps: number[]; rate: number[] };
 };
 
+/**
+ * Categorical series colours, in fixed assignment order.
+ *
+ * Fixed, never cycled: a series keeps its hue regardless of how many others
+ * are drawn, so filtering or reordering never repaints the survivors. There
+ * is no fourth slot on purpose — a fourth series folds into a dash variant of
+ * an existing hue (as the Watson orders do) or the figure gets split.
+ */
+export const SERIES_COLORS = [
+  "var(--series-1)",
+  "var(--series-2)",
+  "var(--series-3)",
+] as const;
+
+/** A point-wise series. `null` y marks a gap, so a series can cover part of x. */
+export type LinePoint = { x: number; y: number | null };
+
+export type LineSeries = {
+  label: string;
+  points: LinePoint[];
+  /**
+   * Which categorical hue to use. Two series sharing a colorIndex must differ
+   * by `dash` — that is the composite encoding for one entity at two orders.
+   */
+  colorIndex?: number;
+  dash?: boolean;
+  /** Short label drawn on the curve, since colour alone is not enough. */
+  directLabel?: string;
+  /** Where along the series to place `directLabel`, 0..1. Default 0.5. */
+  labelAt?: number;
+};
+
+/** A labelled vertical rule, e.g. where a numeric method gives out. */
+export type Annotation = { x: number; label: string; align?: "left" | "right" };
+
+export type LinesFigure = {
+  kind: "lines";
+  title: string;
+  caption?: string;
+  meta?: { source?: string };
+  x: { label: string; min?: number; max?: number };
+  y: {
+    label: string;
+    /** Log is the point for error curves spanning many decades. */
+    scale?: "linear" | "log";
+    min?: number;
+    max?: number;
+    /** `sci` renders 1e-9 style ticks; `plain` renders numbers. */
+    format?: "sci" | "plain";
+  };
+  series: LineSeries[];
+  annotations?: Annotation[];
+  /** Horizontal reference levels, e.g. the optimal entry/exit bands. */
+  levels?: { value: number; label: string }[];
+  /** Called-out points on the series, e.g. where a trade opened and closed. */
+  markers?: { x: number; y: number; label: string }[];
+};
+
 export type BarFigure = {
   kind: "bar";
   title: string;
   caption?: string;
   meta?: { source?: string };
+  /**
+   * How to render values. Defaults to `usd` because most figures here are
+   * PnL, but a Sharpe ratio labelled "$10" is simply wrong.
+   */
+  valueFormat?: "usd" | "number";
   x: { label: string; values: string[] };
   series: { label: string; values: number[] }[];
   trades?: number[];
 };
 
-export type Figure = EquityFigure | BarFigure;
+export type Figure = EquityFigure | BarFigure | LinesFigure;
 
 /**
  * Cumulative net PnL at an arbitrary fee.
@@ -180,3 +243,24 @@ export function formatDay(date: Date): string {
     timeZone: "UTC",
   });
 }
+
+/** `1e-9`, for log axes spanning many decades. */
+export function formatSci(value: number): string {
+  if (value === 0) return "0";
+  const exponent = Math.round(Math.log10(Math.abs(value)));
+  return `1e${exponent}`;
+}
+
+/** Compact plain number for axis ticks: `1.4`, `-1.1`, `10.2`. */
+export function formatNumber(value: number, digits = 1): string {
+  return Number(value.toFixed(digits)).toString();
+}
+
+/** Value formatters for bar figures, selected by `BarFigure.valueFormat`. */
+export const BAR_FORMATS = {
+  usd: { full: formatUsd, axis: formatUsdCompact },
+  number: {
+    full: (v: number) => formatNumber(v, 2),
+    axis: (v: number) => formatNumber(v, 1),
+  },
+} as const;

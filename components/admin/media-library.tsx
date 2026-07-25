@@ -106,7 +106,9 @@ export function MediaLibrary() {
       for (const file of files) {
         await uploadToMediaBucket(
           file,
-          file.type === "application/pdf" ? "files" : "mdx",
+          file.type === "application/pdf" || file.type === "application/json"
+            ? "files"
+            : "mdx",
         );
       }
       toast.success(files.length === 1 ? "Uploaded" : `${files.length} uploaded`);
@@ -139,7 +141,7 @@ export function MediaLibrary() {
         <input
           ref={inputRef}
           type="file"
-          accept={`${MEDIA_IMAGE_ACCEPT},application/pdf`}
+          accept={`${MEDIA_IMAGE_ACCEPT},application/pdf,application/json`}
           multiple
           className="hidden"
           onChange={(e) => {
@@ -153,9 +155,10 @@ export function MediaLibrary() {
         </Button>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">
-        Images and files in the public media bucket. Reference images from any
-        MDX field with a{" "}
-        <code className="font-mono text-xs">&lt;Figure /&gt;</code> — copy the
+        Images, PDFs, and chart data in the public media bucket. Reference an
+        image with a <code className="font-mono text-xs">&lt;Figure /&gt;</code>{" "}
+        and a JSON payload with a{" "}
+        <code className="font-mono text-xs">&lt;Chart /&gt;</code> — copy the
         snippet below.
       </p>
 
@@ -188,6 +191,9 @@ function MediaCard({
   onDelete: () => void;
 }) {
   const isImage = item.mimetype.startsWith("image/");
+  // Chart payloads are the one non-image type with an MDX tag of its own.
+  const isChartData =
+    item.mimetype === "application/json" || item.name.endsWith(".json");
 
   return (
     <div className="overflow-hidden rounded-lg border">
@@ -216,15 +222,21 @@ function MediaCard({
             .join(" · ")}
         </p>
         <div className="mt-1.5 flex items-center gap-0.5">
-          {isImage ? (
+          {isImage || isChartData ? (
             <Button
               variant="ghost"
               size="sm"
-              aria-label="Copy Figure snippet"
-              title="Copy <Figure /> snippet"
+              aria-label={
+                isChartData ? "Copy Chart snippet" : "Copy Figure snippet"
+              }
+              title={
+                isChartData ? "Copy <Chart /> snippet" : "Copy <Figure /> snippet"
+              }
               onClick={() =>
                 copyToClipboard(
-                  `<Figure src="${item.url}" alt="${altFromFileName(item.name)}" />`,
+                  isChartData
+                    ? `<Chart src="${item.url}" />`
+                    : `<Figure src="${item.url}" alt="${altFromFileName(item.name)}" />`,
                   "Snippet copied — paste it into any MDX field",
                 )
               }

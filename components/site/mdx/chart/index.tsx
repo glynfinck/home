@@ -1,8 +1,9 @@
 import { BarChart } from "@/components/site/mdx/chart/bar-chart";
 import { ChartError } from "@/components/site/mdx/chart/chart-frame";
 import { EquityChart } from "@/components/site/mdx/chart/equity-chart";
+import { LineChart } from "@/components/site/mdx/chart/line-chart";
 import { loadFigure } from "@/lib/figure";
-import type { BarFigure, EquityFigure } from "@/lib/chart";
+import type { BarFigure, EquityFigure, LinesFigure } from "@/lib/chart";
 
 /**
  * `<Chart src="/figures/pairs-equity.json" />`
@@ -43,6 +44,8 @@ export async function Chart({
       return <EquityChart figure={withOverrides as EquityFigure} />;
     case "bar":
       return <BarChart figure={withOverrides as BarFigure} />;
+    case "lines":
+      return <LineChart figure={withOverrides as LinesFigure} />;
     default:
       return <ChartError src={src} />;
   }
