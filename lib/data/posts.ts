@@ -72,6 +72,40 @@ export async function getAllTags(): Promise<{ tag: string; count: number }[]> {
     .sort((a, b) => b.count - a.count);
 }
 
+/**
+ * Posts closest to `slug` by tag overlap, most similar first.
+ *
+ * Scored by Jaccard index so a post that shares 2 of its 3 tags ranks above
+ * one that shares 2 of 12. Ties and zero-overlap fall back to recency, which
+ * keeps the section populated on a site this small rather than hiding it.
+ */
+export async function getRelatedPosts(
+  slug: string,
+  limit = 3,
+): Promise<PostListItem[]> {
+  const posts = await getPublishedPosts();
+  const current = posts.find((p) => p.slug === slug);
+  if (!current) return [];
+
+  const currentTags = new Set(current.tags);
+
+  return posts
+    .filter((p) => p.slug !== slug)
+    .map((post) => {
+      const shared = post.tags.filter((t) => currentTags.has(t)).length;
+      const union = new Set([...currentTags, ...post.tags]).size;
+      return { post, score: union === 0 ? 0 : shared / union };
+    })
+    .sort(
+      (a, b) =>
+        b.score - a.score ||
+        Date.parse(b.post.published_at ?? "") -
+          Date.parse(a.post.published_at ?? ""),
+    )
+    .slice(0, limit)
+    .map((entry) => entry.post);
+}
+
 /** Research papers referenced by a post ("Referenced research"). */
 export function getPapersForPost(postId: string): Promise<PaperRef[]> {
   return safeRead(

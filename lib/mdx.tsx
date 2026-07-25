@@ -7,18 +7,30 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 
 import { Callout } from "@/components/site/mdx/callout";
+import { Chart } from "@/components/site/mdx/chart";
 import { Figure } from "@/components/site/mdx/figure";
 import { PaperCard } from "@/components/site/mdx/paper-card";
+import { Pre } from "@/components/site/mdx/pre";
+import { Sidenote } from "@/components/site/mdx/sidenote";
 
 /**
  * Admin-authored MDX only. MDX compiles to executable code, so this renderer
  * must never receive user-generated content (comments render as plain text).
+ *
+ * Anything added here also needs a server-safe stand-in in
+ * `components/admin/preview-components.tsx`, or the admin live preview breaks
+ * (`renderToStaticMarkup` cannot render client components).
  */
 
 export const mdxComponents = {
   Callout,
+  Chart,
   Figure,
   PaperCard,
+  Sidenote,
+  // Overriding `pre` adds the filename tab and copy button to every fenced
+  // block without touching the rehype-pretty-code output.
+  pre: Pre,
 };
 
 export const mdxOptions = {

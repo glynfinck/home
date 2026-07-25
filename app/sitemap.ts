@@ -1,13 +1,15 @@
 import type { MetadataRoute } from "next";
 
 import { getAllTags, getPublishedPosts } from "@/lib/data/posts";
+import { getPublishedProjects } from "@/lib/data/projects";
 import { getPublishedPapers } from "@/lib/data/research";
 import { getSeoSettings } from "@/lib/data/settings";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [seo, posts, papers, tags] = await Promise.all([
+  const [seo, posts, projects, papers, tags] = await Promise.all([
     getSeoSettings(),
     getPublishedPosts(),
+    getPublishedProjects(),
     getPublishedPapers(),
     getAllTags(),
   ]);
@@ -31,6 +33,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...posts.map((post) => ({
       url: `${base}/blog/${post.slug}`,
       lastModified: post.updated_at,
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    })),
+    ...projects.map((project) => ({
+      url: `${base}/projects/${project.slug}`,
+      lastModified: project.updated_at,
       changeFrequency: "monthly" as const,
       priority: 0.8,
     })),

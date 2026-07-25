@@ -101,6 +101,39 @@ export function CalloutPreview({
 }
 
 /**
+ * Sidenotes are pure markup, so the preview can render the real thing. The
+ * `.sidenote` styles come from globals.css, which the preview pane inherits.
+ */
+export function SidenotePreview({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <label className="sidenote-ref">
+        <input type="checkbox" aria-label="Show note" />
+      </label>
+      <span className="sidenote">{children}</span>
+    </>
+  );
+}
+
+/**
+ * The real <Chart> reads its payload from disk or the media bucket and hands
+ * it to a client component. Neither is possible under renderToStaticMarkup,
+ * so the preview confirms the reference and the surrounding layout.
+ */
+export function ChartPreview({ src }: { src: string }) {
+  return (
+    <div className="not-prose my-8 rounded-lg border border-dashed bg-card p-5">
+      <p className="font-mono text-xs tracking-wide text-brand uppercase">
+        Figure
+      </p>
+      <p className="mt-2 font-mono text-sm break-all text-muted-foreground">
+        &lt;Chart src=&quot;{src}&quot; /&gt; renders on the published page
+      </p>
+    </div>
+  );
+}
+
+/**
  * The real <PaperCard> fetches its paper server-side; a placeholder is
  * enough to check the surrounding layout while writing.
  */
