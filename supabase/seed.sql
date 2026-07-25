@@ -19,6 +19,12 @@
 -- pipeline, the figures, sidenotes, and the table of contents locally.
 --
 -- Re-runnable: every statement upserts on its natural key.
+--
+-- ⚠️  ESCAPE CURRENCY IN MDX BODIES. remark-math reads `$...$` as inline math,
+--     so a sentence with two dollar amounts ("leaves $46 ... loses $1,496")
+--     silently becomes an equation and renders one character per line. Write
+--     `\$46` in prose. Display math (`$$...$$`) is unaffected, and plain-text
+--     columns like `research_papers.abstract` never reach remark-math.
 -- =============================================================================
 
 -- Site settings ---------------------------------------------------------------
@@ -193,7 +199,7 @@ Drag the slider.
 
 <Chart src="/figures/pairs-equity.json" caption="The same 38,241 trades, priced at whatever fee you choose. The strategy I thought I had is the one at 2 bps." />
 
-The curve does not survive contact with a realistic fee. Break-even is 14.3 bps. Kraken's real maker tier is 14 bps, which leaves $46 on the year; the taker tier is 24 bps, which loses $1,496.
+The curve does not survive contact with a realistic fee. Break-even is 14.3 bps. Kraken's real maker tier is 14 bps, which leaves \$46 on the year; the taker tier is 24 bps, which loses \$1,496.
 
 ## Three ways I lied to myself
 
@@ -201,11 +207,11 @@ Look-ahead in the parameter fit, survivorship in the pair list, and a fee assump
 
 ## The finding
 
-The profit is not spread evenly across the universe. It concentrates in the least liquid leg.<Sidenote>Ranks are of the *less liquid* leg of each pair, by one-year quote volume, which is the binding constraint. The illiquid tail alone carries $1,823 of the $2,414 gross.</Sidenote>
+The profit is not spread evenly across the universe. It concentrates in the least liquid leg.<Sidenote>Ranks are of the *less liquid* leg of each pair, by one-year quote volume, which is the binding constraint. The illiquid tail alone carries \$1,823 of the \$2,414 gross.</Sidenote>
 
 <Chart src="/figures/pairs-volume-rank.json" caption="Gross PnL by the less-liquid leg's volume rank. Negative in the majors. Just over 75% of the edge sits in the illiquid tail." />
 
-That is the whole result. The gross edge is an illiquidity premium, sitting exactly where spreads, borrow, and roughly $14k of capacity make it unharvestable.
+That is the whole result. The gross edge is an illiquidity premium, sitting exactly where spreads, borrow, and roughly \$14k of capacity make it unharvestable.
 
 ## Trying to save it anyway
 

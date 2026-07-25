@@ -3,6 +3,14 @@ import { expect, test } from "@playwright/test";
 const POST = "/blog/the-mean-reversion-you-cant-trade";
 
 /**
+ * The live numbers under the plot. Every value here also appears in the
+ * figure's data table, so assertions have to be scoped to this element to
+ * actually prove the readout is updating.
+ */
+const readout = (figure: import("@playwright/test").Locator) =>
+  figure.locator("dl");
+
+/**
  * The fee slider is the site's signature figure, and its correctness claim is
  * that net PnL is recomputed exactly rather than interpolated between baked
  * curves. These pin the numbers the surrounding prose states.
@@ -16,8 +24,12 @@ test.describe("interactive figure", () => {
     const figure = page.locator("figure", { hasText: "Cumulative net PnL" });
     await expect(figure).toBeVisible();
     await expect(figure.locator("svg path[stroke]").first()).toBeVisible();
-    await expect(figure).toContainText("$1,896");
-    await expect(figure).toContainText("14.3 bps");
+
+    // Scoped to the readout, not the whole figure: the data table also lists
+    // every one of these numbers, so a figure-wide assertion would pass even
+    // if the readout were empty.
+    await expect(readout(figure)).toContainText("$1,896");
+    await expect(readout(figure)).toContainText("14.3 bps");
   });
 
   test("the slider drives the readout to a loss at realistic fees", async ({
@@ -27,11 +39,20 @@ test.describe("interactive figure", () => {
     const figure = page.locator("figure", { hasText: "Cumulative net PnL" });
     const slider = figure.getByLabel("Fee per side");
 
-    await expect(figure).toContainText("$1,896");
+    await expect(readout(figure)).toContainText("$1,896");
 
-    // Kraken's real taker tier, well past the 14.3 bps break-even.
-    await slider.fill("24");
-    await expect(figure).toContainText("-$1,496");
+    // Retried as a unit. The chart renders server-side, so the slider exists
+    // and accepts a value before React has attached its handler; on a slow
+    // machine an un-retried fill lands in that gap and the readout never
+    // moves. Retrying re-fills until hydration has caught up.
+    await expect(async () => {
+      // Kraken's real taker tier, well past the 14.3 bps break-even.
+      await slider.fill("24");
+      await expect(readout(figure)).toContainText("-$1,496", {
+        timeout: 1_000,
+      });
+    }).toPass({ timeout: 20_000 });
+
     await expect(figure).toContainText("At 24 bps the edge is gone.");
   });
 
@@ -42,9 +63,11 @@ test.describe("interactive figure", () => {
       .getByLabel("Fee per side");
 
     await slider.focus();
-    const before = await slider.inputValue();
-    await slider.press("ArrowRight");
-    expect(Number(await slider.inputValue())).toBeGreaterThan(Number(before));
+    const before = Number(await slider.inputValue());
+    await expect(async () => {
+      await slider.press("ArrowRight");
+      expect(Number(await slider.inputValue())).toBeGreaterThan(before);
+    }).toPass({ timeout: 10_000 });
   });
 
   test("every plotted value is reachable without hovering", async ({ page }) => {
