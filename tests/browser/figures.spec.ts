@@ -10,6 +10,9 @@ const POST = "/blog/the-mean-reversion-you-cant-trade";
 const readout = (figure: import("@playwright/test").Locator) =>
   figure.locator("dl");
 
+/** The fee control's range, as the stored spec declares it. */
+const FEE = { min: 0, max: 30 };
+
 /**
  * The fee slider is the site's signature figure, and its correctness claim is
  * that net PnL is recomputed exactly rather than interpolated between baked
@@ -53,7 +56,14 @@ test.describe("interactive figure", () => {
     // and accepts a value before React has attached its handler; on a slow
     // machine an un-retried fill lands in that gap and the readout never
     // moves. Retrying re-fills until hydration has caught up.
+    //
+    // Each attempt moves the slider away from the target first. `fill` only
+    // dispatches when the value actually changes, so a pre-hydration fill of
+    // "24" would leave the input reading 24 with React still at 2, and every
+    // later retry of the same value would be a silent no-op — the loop could
+    // never recover, which is exactly how this failed on CI.
     await expect(async () => {
+      await slider.fill(String(FEE.min));
       // Kraken's real taker tier, well past the 14.3 bps break-even.
       await slider.fill("24");
       await expect(readout(figure)).toContainText("-$1,496", {
