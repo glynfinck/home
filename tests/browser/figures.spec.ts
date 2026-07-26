@@ -16,14 +16,22 @@ const readout = (figure: import("@playwright/test").Locator) =>
  * curves. These pin the numbers the surrounding prose states.
  */
 test.describe("interactive figure", () => {
-  test("renders server-side at the paper's baseline fee", async ({ page }) => {
-    // `domcontentloaded`, not `load`: the assertion is specifically that the
-    // chart is in the initial HTML rather than drawn after hydration.
+  test("renders server-side at the paper's baseline fee", async ({ page, request }) => {
+    // Asserted against the raw response rather than the DOM: a live Vega view
+    // replaces the server-rendered SVG shortly after hydration, so a DOM query
+    // proves nothing about what arrived in the HTML. This is the check that
+    // the figure survives with JavaScript off, and on paper.
+    const html = await (await request.get(POST)).text();
+    // Vega writes its own namespace attributes first, so `class` is not the
+    // first attribute on the element.
+    expect(html).toMatch(/<svg[^>]*class="marks"/);
+    expect(html).toMatch(/<path[^>]*stroke="var\(--brand\)"/);
+
     await page.goto(POST, { waitUntil: "domcontentloaded" });
 
     const figure = page.locator("figure", { hasText: "Cumulative net PnL" });
     await expect(figure).toBeVisible();
-    await expect(figure.locator("svg path[stroke]").first()).toBeVisible();
+    await expect(figure.locator("svg.marks path[stroke]").first()).toBeAttached();
 
     // Scoped to the readout, not the whole figure: the data table also lists
     // every one of these numbers, so a figure-wide assertion would pass even
@@ -68,6 +76,41 @@ test.describe("interactive figure", () => {
       await slider.press("ArrowRight");
       expect(Number(await slider.inputValue())).toBeGreaterThan(before);
     }).toPass({ timeout: 10_000 });
+  });
+
+  /**
+   * Every figure is server-rendered first, then handed to a live Vega view
+   * that brings the library's tooltips with it. The static figures had no
+   * pointer read-out at all on the first pass and nothing caught it, hence
+   * this test.
+   *
+   * The tooltip is vega-tooltip's single `#vg-tooltip-element`, appended to
+   * <body> rather than to the figure, so it is asserted on the page.
+   */
+  test("a static figure reads out its values on hover", async ({ page }) => {
+    await page.goto(POST);
+    const figure = page.locator("figure", { hasText: "crossover is validated" });
+    await figure.scrollIntoViewIfNeeded();
+
+    // The live view replaces the server-rendered copy once Vega has loaded.
+    const live = figure.locator("svg.marks:visible").last();
+    await expect(live).toBeVisible();
+
+    const tooltip = page.locator("#vg-tooltip-element");
+
+    await expect(async () => {
+      // The invisible point layer exists so a hover near the curve counts;
+      // targeting it directly keeps the test off pixel coordinates.
+      const hits = live.locator("g.mark-symbol path");
+      const count = await hits.count();
+      expect(count).toBeGreaterThan(0);
+
+      await hits.nth(Math.floor(count / 2)).hover({ force: true });
+      await expect(tooltip).toBeVisible({ timeout: 1_000 });
+      // Series and value together: either alone would be useless.
+      await expect(tooltip).toContainText("Representation");
+      await expect(tooltip).toContainText("Relative error");
+    }).toPass({ timeout: 20_000 });
   });
 
   test("every plotted value is reachable without hovering", async ({ page }) => {

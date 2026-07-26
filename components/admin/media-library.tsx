@@ -191,9 +191,6 @@ function MediaCard({
   onDelete: () => void;
 }) {
   const isImage = item.mimetype.startsWith("image/");
-  // Chart payloads are the one non-image type with an MDX tag of its own.
-  const isChartData =
-    item.mimetype === "application/json" || item.name.endsWith(".json");
 
   return (
     <div className="overflow-hidden rounded-lg border">
@@ -222,21 +219,15 @@ function MediaCard({
             .join(" · ")}
         </p>
         <div className="mt-1.5 flex items-center gap-0.5">
-          {isImage || isChartData ? (
+          {isImage ? (
             <Button
               variant="ghost"
               size="sm"
-              aria-label={
-                isChartData ? "Copy Chart snippet" : "Copy Figure snippet"
-              }
-              title={
-                isChartData ? "Copy <Chart /> snippet" : "Copy <Figure /> snippet"
-              }
+              aria-label="Copy Figure snippet"
+              title="Copy <Figure /> snippet"
               onClick={() =>
                 copyToClipboard(
-                  isChartData
-                    ? `<Chart src="${item.url}" />`
-                    : `<Figure src="${item.url}" alt="${altFromFileName(item.name)}" />`,
+                  `<Figure src="${item.url}" alt="${altFromFileName(item.name)}" />`,
                   "Snippet copied — paste it into any MDX field",
                 )
               }

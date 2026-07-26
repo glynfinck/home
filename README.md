@@ -30,6 +30,11 @@ Supabase (Postgres + Auth + Storage) · Vercel
 - **MDX** — posts/papers are MDX with GFM, KaTeX math, shiki code
   highlighting, and custom components (`<Callout>`, `<Figure>`,
   `<PaperCard slug="…" />` to embed a paper inline).
+- **Figures** — `datasets` hold generic tables (typed columns, columnar
+  payload, immutable versions); `charts` hold a Vega-Lite spec that draws one.
+  Both are edited at `/admin/datasets` and `/admin/charts`, so publishing a
+  figure needs no redeploy. Articles use `<Chart slug="…" />` and
+  `<Table slug="…" />`. See [Figures](#figures) below.
 
 ## Local development
 
@@ -81,6 +86,57 @@ password user instead (Studio → Authentication), or enable providers in
 `supabase/config.toml` (`[auth.external.github]`, env-referenced secrets)
 with a GitHub OAuth app pointing at
 `http://127.0.0.1:54321/auth/v1/callback`.
+
+## Figures
+
+Data and presentation are separate rows:
+
+- **`datasets`** — a generic table: typed columns plus a columnar payload.
+  Every import appends an immutable `dataset_versions` row with a checksum, so
+  re-importing unchanged data is a no-op and any older version can be served
+  again. Import accepts CSV, TSV, JSON rows, JSON columns and NDJSON.
+- **`charts`** — a Vega-Lite v6 spec, stored raw, plus `bindings` mapping the
+  dataset names the spec refers to (`{"main": {"slug": "…"}}`).
+
+In an article:
+
+```mdx
+<Chart slug="pairs-equity" caption="Overrides the stored caption." />
+<Table slug="pairs-liquidity-ladder" columns={["rank_bucket", "gross_pnl"]} />
+```
+
+Figures render to SVG **on the server** at two widths, and CSS picks one, so
+there is something to look at before hydration, with JavaScript off, and on
+paper. When a figure nears the viewport, `VegaView` loads the Vega runtime
+(its own chunk, ~167KB gzipped) and swaps in a live view — that is where
+tooltips and parameter redraws come from. None of that interactivity is
+hand-written.
+
+Colours are CSS custom properties passed through to the SVG, which is why the
+theme toggle needs no JavaScript. Two constraints follow, both enforced by
+tests in `tests/unit/chart-render.test.ts`:
+
+- **Categorical colour only.** A continuous colour scale runs its range
+  through d3-color, which cannot parse `var(--brand)` and emits
+  `rgb(NaN,NaN,NaN)`. `assertRenderableSpec` rejects that on save.
+- **Layout must not depend on text metrics.** Headless Vega has no canvas and
+  estimates text width at `0.8 * length * fontSize`, which is roughly 50% too
+  wide for these labels. `lib/charts/render.ts` sets `autosize: none` with
+  explicit padding and ticks so the emitted SVG is a pure function of the spec
+  and the data — which also makes the server and browser renders identical, so
+  the handover is invisible. Do not install the native `canvas` package to
+  "fix" the metrics.
+
+An interactive figure is a spec with `params`. The control itself stays in
+React (a native range input the site styles and the tests pin) and writes to
+the named signal on the live view; Vega re-evaluates the spec's own transforms
+to redraw. `usermeta.control` describes the control and the columns the
+read-out recomputes from — those numbers appear in prose beside the figure, so
+they use the formatters in `lib/chart.ts`.
+
+`supabase/seeds/figures.sql` is the initial load for a fresh database (applied
+by `supabase db reset` after `seed.sql`). After that, figures are edited at
+`/admin`, so the database moves ahead of that file.
 
 ## Tests
 

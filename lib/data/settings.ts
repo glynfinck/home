@@ -17,9 +17,13 @@ export const CACHE_TAGS = {
   posts: "posts",
   research: "research",
   tagKinds: "tag-kinds",
+  charts: "charts",
+  datasets: "datasets",
   post: (slug: string) => `post:${slug}`,
   paper: (slug: string) => `paper:${slug}`,
   project: (slug: string) => `project:${slug}`,
+  chart: (slug: string) => `chart:${slug}`,
+  dataset: (slug: string) => `dataset:${slug}`,
 } as const;
 
 const getRawSettingsCached = unstable_cache(

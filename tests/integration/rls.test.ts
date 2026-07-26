@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
   adminClient,
@@ -250,5 +250,133 @@ describe("security-definer counters (anon-callable)", () => {
       .eq("id", paperId)
       .single();
     expect(data!.download_count).toBeGreaterThan(downloadsBefore);
+  });
+});
+
+describe("datasets & charts", () => {
+  let draftDatasetId: string;
+  let draftChartId: string | null = null;
+
+  beforeAll(async () => {
+    const { data } = await admin
+      .from("datasets")
+      .insert({
+        slug: `draft-dataset-${stamp}`,
+        name: "Draft dataset",
+        status: "draft",
+      })
+      .select("id")
+      .single();
+    draftDatasetId = data!.id;
+
+    await admin.from("dataset_versions").insert({
+      dataset_id: draftDatasetId,
+      version: 1,
+      columns: [{ key: "x", label: "X", type: "integer" }],
+      data: { x: [1, 2] },
+      row_count: 2,
+      checksum: `draft-${stamp}`,
+    });
+  });
+
+  it("shows published datasets and hides drafts", async () => {
+    const { data } = await anon.from("datasets").select("slug");
+    const slugs = (data ?? []).map((row) => row.slug);
+    expect(slugs).toContain("pairs-equity-daily");
+    expect(slugs).not.toContain(`draft-dataset-${stamp}`);
+  });
+
+  it("hides the versions of a draft dataset", async () => {
+    // Payloads inherit their parent's visibility, or a draft's numbers would
+    // be readable by anyone who guessed the table name.
+    const { data } = await anon
+      .from("dataset_versions")
+      .select("id")
+      .eq("dataset_id", draftDatasetId);
+    expect(data ?? []).toHaveLength(0);
+  });
+
+  it("exposes the versions of a published dataset", async () => {
+    const { data: dataset } = await anon
+      .from("datasets")
+      .select("id, current_version_id")
+      .eq("slug", "pairs-equity-daily")
+      .single();
+
+    const { data } = await anon
+      .from("dataset_versions")
+      .select("id, row_count")
+      .eq("id", dataset!.current_version_id!)
+      .single();
+    expect(data!.row_count).toBeGreaterThan(0);
+  });
+
+  it("shows published charts and hides drafts", async () => {
+    const { data: published } = await anon
+      .from("charts")
+      .select("slug")
+      .eq("slug", "pairs-equity")
+      .maybeSingle();
+    expect(published).not.toBeNull();
+
+    const { data: created } = await admin
+      .from("charts")
+      .insert({
+        slug: `draft-chart-${stamp}`,
+        title: "Draft chart",
+        spec: { mark: "line" },
+        status: "draft",
+      })
+      .select("id")
+      .single();
+    draftChartId = created!.id;
+
+    const { data: hidden } = await anon
+      .from("charts")
+      .select("slug")
+      .eq("id", created!.id)
+      .maybeSingle();
+    expect(hidden).toBeNull();
+  });
+
+  it("rejects anon writes to every figure table", async () => {
+    const attempts = await Promise.all([
+      anon.from("datasets").insert({ slug: "x", name: "x" }),
+      anon.from("dataset_versions").insert({
+        dataset_id: draftDatasetId,
+        version: 99,
+        columns: [],
+        data: {},
+        row_count: 0,
+        checksum: "x",
+      }),
+      anon.from("charts").insert({ slug: "x", title: "x", spec: {} }),
+      anon.from("chart_datasets").insert({
+        chart_id: draftDatasetId,
+        dataset_id: draftDatasetId,
+      }),
+    ]);
+    for (const attempt of attempts) expect(attempt.error).not.toBeNull();
+  });
+
+  it("refuses to delete a dataset a chart still draws", async () => {
+    // `on delete restrict` is what stops tidying the dataset list from
+    // silently breaking a published figure.
+    const { data: dataset } = await admin
+      .from("datasets")
+      .select("id")
+      .eq("slug", "pairs-equity-daily")
+      .single();
+
+    const { error } = await admin.from("datasets").delete().eq("id", dataset!.id);
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("23503");
+  });
+
+  // Unlike the user fixtures, these rows show up in the admin UI, so they are
+  // cleaned up rather than left to accumulate across local runs.
+  afterAll(async () => {
+    if (draftChartId) await admin.from("charts").delete().eq("id", draftChartId);
+    await admin.from("datasets").delete().eq("id", draftDatasetId);
   });
 });

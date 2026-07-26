@@ -236,7 +236,7 @@ $$
 
 The one piece that isn't a pure ratio, $V(x) = (b^* - c)\,F(x)/F(b^*)$, is evaluated in log space, where the leftover exponent $\tfrac{1}{4}\bigl(\beta(x)^2 - \beta(b^*)^2\bigr)$ is a modest number whenever both points sit inside the trading range, even though each factor alone would overflow. Same roots as the paper's conditions, but every term is now a single stable special-function call, findable by a vectorized bracketing solver across thousands of parameter sets at once. For the extreme tails where even that kernel gives up, Watson's lemma supplies the asymptotics.
 
-<Chart src="/figures/pairs-crossover.json" caption="Every representation checked against an overflow-free quadrature reference. The exact kernel is good to reference precision until SciPy's pbdv dies (asymmetrically: +53 by overflow, -41 by underflow); the asymptotic fallbacks take over from there." />
+<Chart slug="pairs-crossover" caption="Every representation checked against an overflow-free quadrature reference. The exact kernel is good to reference precision until SciPy's pbdv dies (asymmetrically: +53 by overflow, -41 by underflow); the asymptotic fallbacks take over from there." />
 
 Deriving this (filling the gap between "a paper says it's optimal" and "my machine computes it in bulk") is the part of the project I would do again for free.
 
@@ -248,7 +248,7 @@ The first version ran on Dask over a Postgres feature store, with a cloud cluste
 
 Top 100 USD pairs on Kraken by volume. Every pair of them: 4,950 combinations. A year of one-minute bars. 38,241 simulated round trips.
 
-<Chart src="/figures/pairs-trade-anatomy.json" caption="One real round trip at the computed optimal levels. LINKUSD - 0.41 x ZECUSD, January 2025: entry below d*, sixty hours of noise, exit above b*." />
+<Chart slug="pairs-trade-anatomy" caption="One real round trip at the computed optimal levels. LINKUSD - 0.41 x ZECUSD, January 2025: entry below d*, sixty hours of noise, exit above b*." />
 
 ## The equity curve that looked beautiful
 
@@ -270,7 +270,7 @@ Then I checked my fee assumption against Kraken's published schedule. That one c
 **The short book I didn't know I had.** Trading every pair one-sided means a single volatile microcap can sit on the short leg of dozens of positions at once. On January 17, 2025, one +18% pump in one small asset (XCN) caused 92% of the day's losses across 722 closing trades and, at the time, erased several multiples of the strategy's lifetime profit. My hedge ratios had a median of 46 and a 99th percentile of 11.9 million. That is not a hedge; that's a levered short with paperwork.
 </Callout>
 
-<Chart src="/figures/pairs-equity.json" caption="The same 38,241 trades, priced at whatever fee you choose. The strategy I thought I had is the one at 2 bps." />
+<Chart slug="pairs-equity" caption="The same 38,241 trades, priced at whatever fee you choose. The strategy I thought I had is the one at 2 bps." />
 
 ## The finding
 
@@ -278,7 +278,7 @@ Here's where it stops being a story about my mistakes and becomes a finding, bec
 
 Then you sort the profits by the liquidity of each pair's worse leg:
 
-<Chart src="/figures/pairs-volume-rank.json" caption="Gross PnL by the less-liquid leg's volume rank. Negative in the majors. Just over 75% of the edge sits in the illiquid tail." />
+<Chart slug="pairs-volume-rank" caption="Gross PnL by the less-liquid leg's volume rank. Negative in the majors. Just over 75% of the edge sits in the illiquid tail." />
 
 The gross edge doesn't just shrink as pairs get more liquid: it *vanishes*, and then goes slightly negative. Among the top-15 assets, where you could actually trade size, there is nothing. Just over 75% of the entire edge sits in pairs whose worse leg ranks 51-100 by volume: assets with 25-100 bps half-spreads, unreliable or absent borrow, and a median trade size, in my own backtest, of \$18, against maybe \$14k of total capacity.
 

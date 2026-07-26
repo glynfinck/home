@@ -48,3 +48,8 @@ next-env.d.ts
 
 # supabase: local-only SQL snippets pasted into the prod SQL editor
 /supabase/snippets
+
+# Generated figure CSVs (import them at /admin/datasets).
+# Anchored: an unanchored `data/` also matches lib/data/, which silently
+# swallowed a source file.
+/data/

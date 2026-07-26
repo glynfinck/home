@@ -8,6 +8,10 @@ reproduce the published ones rather than a parallel re-derivation:
         paper_results.json          headline numbers + liquidity ladder buckets
         equity_curves_daily.csv     the three published equity curves
 
+Output is one CSV per dataset in `data/figures/` (gitignored), ready to import
+at /admin/datasets. Re-importing unchanged numbers is a no-op, so this is safe
+to re-run whenever the paper is re-run.
+
 Run it with either project's venv (both have pandas/duckdb):
 
     ~/Documents/Repositories/Research/ou-pairs-paper/.venv/bin/python \
@@ -40,6 +44,7 @@ trades and $1,896 net.
 
 from __future__ import annotations
 
+import csv
 import json
 from pathlib import Path
 
@@ -52,7 +57,7 @@ RESULTS = PAPER / "results"
 GOLD = Path.home() / "Documents/Data/gold/ou_pairs"
 SILVER = Path.home() / "Documents/Data/silver/kraken_ohlcv_1m"
 TRADES = f"{GOLD}/trades/**/*.parquet"
-OUT = Path(__file__).resolve().parent.parent / "public/figures"
+OUT = Path(__file__).resolve().parent.parent / "data/figures"
 
 FEE_MAX_BPS = 30.0
 FEE_STEP_BPS = 0.25
@@ -417,22 +422,166 @@ def build_trade_anatomy() -> dict:
     }
 
 
+def quiet_x_for(value, points, x_min, x_max, segments=12):
+    """Centre of whichever x-segment leaves the most vertical room around
+    `value`. Level labels are placed here rather than in a fixed corner, which
+    buried them under the data."""
+    width = (x_max - x_min) / segments
+    best_centre = x_min + width / 2
+    best_clearance = float("-inf")
+
+    for i in range(segments):
+        lo = x_min + i * width
+        hi = lo + width
+        clearance = float("inf")
+        for point in points:
+            if point["y"] is None or point["x"] < lo or point["x"] > hi:
+                continue
+            clearance = min(clearance, abs(point["y"] - value))
+        if clearance == float("inf"):
+            clearance = 1e18
+        if clearance > best_clearance:
+            best_clearance = clearance
+            best_centre = lo + width / 2
+    return best_centre
+
+
+def anchor_at(points, at):
+    """The point `at` (0..1) of the way along a series' defined points."""
+    defined = [p for p in points if p["y"] is not None]
+    clamped = min(max(at, 0.0), 1.0)
+    index = min(round((len(defined) - 1) * clamped), len(defined) - 1)
+    return defined[index]
+
+
+def to_rows(equity, ladder, crossover, anatomy):
+    """The nine datasets the site draws, as flat rows.
+
+    Layout that the old renderers computed at draw time has no equivalent in a
+    Vega-Lite spec, so the anchors for direct labels and level labels are
+    computed here and stored as ordinary columns.
+    """
+    spread = anatomy["series"][0]["points"]
+    xs = [p["x"] for p in spread]
+    x_min, x_max = min(xs), max(xs)
+    inset = (x_max - x_min) * 0.1
+
+    series = equity["series"]
+    start_date = pd.Timestamp(series["start"])
+
+    return {
+        "pairs-equity-daily": (
+            ["day", "date", "gross", "turnover"],
+            [
+                [
+                    day,
+                    (start_date + pd.Timedelta(days=int(day))).strftime("%Y-%m-%d"),
+                    series["gross"][i],
+                    series["turnover"][i],
+                ]
+                for i, day in enumerate(series["day"])
+            ],
+        ),
+        "pairs-winrate-grid": (
+            ["bps", "rate"],
+            list(zip(equity["winRate"]["bps"], equity["winRate"]["rate"])),
+        ),
+        "pairs-liquidity-ladder": (
+            ["rank_bucket", "gross_pnl", "net_pnl_2bps", "trades"],
+            [
+                [
+                    bucket,
+                    ladder["series"][0]["values"][i],
+                    ladder["series"][1]["values"][i],
+                    ladder["trades"][i],
+                ]
+                for i, bucket in enumerate(ladder["x"]["values"])
+            ],
+        ),
+        "pairs-crossover-error": (
+            ["beta", "series", "rel_error"],
+            [
+                [point["x"], s["label"], point["y"]]
+                for s in crossover["series"]
+                for point in s["points"]
+            ],
+        ),
+        "pairs-crossover-labels": (
+            ["beta", "rel_error", "label"],
+            [
+                [
+                    anchor_at(s["points"], s.get("labelAt", 0.5))["x"],
+                    anchor_at(s["points"], s.get("labelAt", 0.5))["y"],
+                    s["directLabel"],
+                ]
+                for s in crossover["series"]
+                if s.get("directLabel")
+            ],
+        ),
+        "pairs-crossover-annotations": (
+            ["beta", "label", "align"],
+            [
+                [a["x"], a["label"], a.get("align", "left")]
+                for a in crossover["annotations"]
+            ],
+        ),
+        "pairs-trade-spread": (
+            ["hours", "spread"],
+            [[p["x"], p["y"]] for p in spread],
+        ),
+        "pairs-trade-levels": (
+            ["value", "label", "label_x"],
+            [
+                [
+                    level["value"],
+                    level["label"],
+                    # Clamped off the edges: the label is centred on its
+                    # anchor, so an anchor in the outer tenth hangs the text
+                    # outside the plot.
+                    min(
+                        max(
+                            quiet_x_for(level["value"], spread, x_min, x_max),
+                            x_min + inset,
+                        ),
+                        x_max - inset,
+                    ),
+                ]
+                for level in anatomy["levels"]
+            ],
+        ),
+        "pairs-trade-markers": (
+            ["hours", "spread", "label"],
+            [[m["x"], m["y"], m["label"]] for m in anatomy["markers"]],
+        ),
+    }
+
+
 def main() -> None:
+    """Write one CSV per dataset, ready to import at /admin/datasets.
+
+    The site reads figures from Postgres now: `datasets` hold the numbers and
+    `charts` hold a Vega-Lite spec that draws them. Re-importing a CSV whose
+    contents have not changed is a no-op, so running this after a re-run of the
+    paper is safe.
+    """
     results = json.loads((RESULTS / "paper_results.json").read_text())
     OUT.mkdir(parents=True, exist_ok=True)
 
-    for name, payload in [
-        ("pairs-equity.json", build_equity(results)),
-        ("pairs-volume-rank.json", build_liquidity_ladder(results)),
-        ("pairs-crossover.json", build_crossover()),
-        ("pairs-trade-anatomy.json", build_trade_anatomy()),
-    ]:
-        path = OUT / name
-        path.write_text(
-            json.dumps(payload, separators=(",", ":"), allow_nan=False) + "\n"
-        )
-        print(f"wrote {path.name} ({path.stat().st_size / 1024:.1f} KB)")
+    datasets = to_rows(
+        build_equity(results),
+        build_liquidity_ladder(results),
+        build_crossover(),
+        build_trade_anatomy(),
+    )
 
-
-if __name__ == "__main__":
-    main()
+    for slug, (header, rows) in datasets.items():
+        path = OUT / f"{slug}.csv"
+        with path.open("w", newline="") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(header)
+            # None becomes an empty field, which the importer reads as a gap
+            # rather than a zero.
+            writer.writerows(
+                [["" if value is None else value for value in row] for row in rows]
+            )
+        print(f"wrote {path.name} ({len(rows)} rows, {path.stat().st_size / 1024:.1f} KB)")
