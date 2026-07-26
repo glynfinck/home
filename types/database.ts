@@ -34,6 +34,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      chart_datasets: {
+        Row: {
+          chart_id: string
+          dataset_id: string
+        }
+        Insert: {
+          chart_id: string
+          dataset_id: string
+        }
+        Update: {
+          chart_id?: string
+          dataset_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chart_datasets_chart_id_fkey"
+            columns: ["chart_id"]
+            isOneToOne: false
+            referencedRelation: "charts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chart_datasets_dataset_id_fkey"
+            columns: ["dataset_id"]
+            isOneToOne: false
+            referencedRelation: "datasets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      charts: {
+        Row: {
+          bindings: Json
+          caption: string | null
+          created_at: string
+          id: string
+          interactive: boolean
+          slug: string
+          spec: Json
+          status: Database["public"]["Enums"]["content_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          bindings?: Json
+          caption?: string | null
+          created_at?: string
+          id?: string
+          interactive?: boolean
+          slug: string
+          spec: Json
+          status?: Database["public"]["Enums"]["content_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          bindings?: Json
+          caption?: string | null
+          created_at?: string
+          id?: string
+          interactive?: boolean
+          slug?: string
+          spec?: Json
+          status?: Database["public"]["Enums"]["content_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       comments: {
         Row: {
           body: string
@@ -88,6 +157,107 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dataset_versions: {
+        Row: {
+          checksum: string
+          columns: Json
+          created_at: string
+          created_by: string | null
+          data: Json
+          dataset_id: string
+          id: string
+          note: string | null
+          row_count: number
+          source_name: string | null
+          version: number
+        }
+        Insert: {
+          checksum: string
+          columns: Json
+          created_at?: string
+          created_by?: string | null
+          data: Json
+          dataset_id: string
+          id?: string
+          note?: string | null
+          row_count: number
+          source_name?: string | null
+          version: number
+        }
+        Update: {
+          checksum?: string
+          columns?: Json
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          dataset_id?: string
+          id?: string
+          note?: string | null
+          row_count?: number
+          source_name?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dataset_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dataset_versions_dataset_id_fkey"
+            columns: ["dataset_id"]
+            isOneToOne: false
+            referencedRelation: "datasets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      datasets: {
+        Row: {
+          created_at: string
+          current_version_id: string | null
+          description: string | null
+          id: string
+          name: string
+          slug: string
+          source: string | null
+          status: Database["public"]["Enums"]["content_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_version_id?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          slug: string
+          source?: string | null
+          status?: Database["public"]["Enums"]["content_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_version_id?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          source?: string | null
+          status?: Database["public"]["Enums"]["content_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "datasets_current_version_id_fkey"
+            columns: ["current_version_id"]
+            isOneToOne: false
+            referencedRelation: "dataset_versions"
             referencedColumns: ["id"]
           },
         ]

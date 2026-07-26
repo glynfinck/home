@@ -86,7 +86,11 @@ const redirectsToHome = (res: Response) => {
 // matrix over all of them proves the guard is applied uniformly.
 const ADMIN_PAGES = [
   "/admin",
+  "/admin/charts",
+  "/admin/charts/new",
   "/admin/comments",
+  "/admin/datasets",
+  "/admin/datasets/new",
   "/admin/kinds",
   "/admin/media",
   "/admin/posts",
@@ -139,6 +143,59 @@ describe("admin mdx-preview route RBAC", () => {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({}),
     });
+    expect(res.status).toBe(400);
+  });
+});
+
+describe("admin chart-preview route RBAC", () => {
+  const body = {
+    spec: {
+      data: { name: "main" },
+      mark: { type: "line" },
+      encoding: {
+        x: { field: "day", type: "quantitative" },
+        y: { field: "gross", type: "quantitative" },
+      },
+    },
+    bindings: { main: { slug: "pairs-equity-daily" } },
+  };
+  const post = (payload: unknown) => ({
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  it("anon is redirected home by the proxy", async () => {
+    redirectsToHome(await req("/admin/chart-preview", "anon", post(body)));
+  });
+
+  it("non-admin gets 401 from requireAdmin", async () => {
+    expect((await req("/admin/chart-preview", "user", post(body))).status).toBe(401);
+  });
+
+  it("admin gets 200 with rendered SVG", async () => {
+    const res = await req("/admin/chart-preview", "admin", post(body));
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as { svg: string };
+    expect(json.svg).toContain("<svg");
+    expect(json.svg).toContain("<path");
+  });
+
+  it("admin gets 422 for a spec that will not compile", async () => {
+    // Editing a spec means it is invalid most of the time, so this has to be
+    // an ordinary response carrying the message, not an error the editor
+    // cannot show. A missing mark is what Vega-Lite actually rejects.
+    const res = await req(
+      "/admin/chart-preview",
+      "admin",
+      post({ ...body, spec: { encoding: { x: { field: "day" } } } }),
+    );
+    expect(res.status).toBe(422);
+    expect((await res.json()).error).toBeTruthy();
+  });
+
+  it("admin gets 400 when the spec is missing", async () => {
+    const res = await req("/admin/chart-preview", "admin", post({}));
     expect(res.status).toBe(400);
   });
 });

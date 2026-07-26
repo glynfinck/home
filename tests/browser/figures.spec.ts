@@ -10,20 +10,31 @@ const POST = "/blog/the-mean-reversion-you-cant-trade";
 const readout = (figure: import("@playwright/test").Locator) =>
   figure.locator("dl");
 
+/** The fee control's range, as the stored spec declares it. */
+const FEE = { min: 0, max: 30 };
+
 /**
  * The fee slider is the site's signature figure, and its correctness claim is
  * that net PnL is recomputed exactly rather than interpolated between baked
  * curves. These pin the numbers the surrounding prose states.
  */
 test.describe("interactive figure", () => {
-  test("renders server-side at the paper's baseline fee", async ({ page }) => {
-    // `domcontentloaded`, not `load`: the assertion is specifically that the
-    // chart is in the initial HTML rather than drawn after hydration.
+  test("renders server-side at the paper's baseline fee", async ({ page, request }) => {
+    // Asserted against the raw response rather than the DOM: a live Vega view
+    // replaces the server-rendered SVG shortly after hydration, so a DOM query
+    // proves nothing about what arrived in the HTML. This is the check that
+    // the figure survives with JavaScript off, and on paper.
+    const html = await (await request.get(POST)).text();
+    // Vega writes its own namespace attributes first, so `class` is not the
+    // first attribute on the element.
+    expect(html).toMatch(/<svg[^>]*class="marks"/);
+    expect(html).toMatch(/<path[^>]*stroke="var\(--brand\)"/);
+
     await page.goto(POST, { waitUntil: "domcontentloaded" });
 
     const figure = page.locator("figure", { hasText: "Cumulative net PnL" });
     await expect(figure).toBeVisible();
-    await expect(figure.locator("svg path[stroke]").first()).toBeVisible();
+    await expect(figure.locator("svg.marks path[stroke]").first()).toBeAttached();
 
     // Scoped to the readout, not the whole figure: the data table also lists
     // every one of these numbers, so a figure-wide assertion would pass even
@@ -45,7 +56,14 @@ test.describe("interactive figure", () => {
     // and accepts a value before React has attached its handler; on a slow
     // machine an un-retried fill lands in that gap and the readout never
     // moves. Retrying re-fills until hydration has caught up.
+    //
+    // Each attempt moves the slider away from the target first. `fill` only
+    // dispatches when the value actually changes, so a pre-hydration fill of
+    // "24" would leave the input reading 24 with React still at 2, and every
+    // later retry of the same value would be a silent no-op — the loop could
+    // never recover, which is exactly how this failed on CI.
     await expect(async () => {
+      await slider.fill(String(FEE.min));
       // Kraken's real taker tier, well past the 14.3 bps break-even.
       await slider.fill("24");
       await expect(readout(figure)).toContainText("-$1,496", {
@@ -68,6 +86,41 @@ test.describe("interactive figure", () => {
       await slider.press("ArrowRight");
       expect(Number(await slider.inputValue())).toBeGreaterThan(before);
     }).toPass({ timeout: 10_000 });
+  });
+
+  /**
+   * Every figure is server-rendered first, then handed to a live Vega view
+   * that brings the library's tooltips with it. The static figures had no
+   * pointer read-out at all on the first pass and nothing caught it, hence
+   * this test.
+   *
+   * The tooltip is vega-tooltip's single `#vg-tooltip-element`, appended to
+   * <body> rather than to the figure, so it is asserted on the page.
+   */
+  test("a static figure reads out its values on hover", async ({ page }) => {
+    await page.goto(POST);
+    const figure = page.locator("figure", { hasText: "crossover is validated" });
+    await figure.scrollIntoViewIfNeeded();
+
+    // The live view replaces the server-rendered copy once Vega has loaded.
+    const live = figure.locator("svg.marks:visible").last();
+    await expect(live).toBeVisible();
+
+    const tooltip = page.locator("#vg-tooltip-element");
+
+    await expect(async () => {
+      // The invisible point layer exists so a hover near the curve counts;
+      // targeting it directly keeps the test off pixel coordinates.
+      const hits = live.locator("g.mark-symbol path");
+      const count = await hits.count();
+      expect(count).toBeGreaterThan(0);
+
+      await hits.nth(Math.floor(count / 2)).hover({ force: true });
+      await expect(tooltip).toBeVisible({ timeout: 1_000 });
+      // Series and value together: either alone would be useless.
+      await expect(tooltip).toContainText("Representation");
+      await expect(tooltip).toContainText("Relative error");
+    }).toPass({ timeout: 20_000 });
   });
 
   test("every plotted value is reachable without hovering", async ({ page }) => {
@@ -114,10 +167,12 @@ test.describe("command palette", () => {
 });
 
 test.describe("sidenotes", () => {
+  // Exercised on the fixture post: the production articles are mirrored
+  // verbatim in the seed, so test-only markup must not be added to them.
   test("collapse behind their marker on mobile and expand on tap", async ({
     page,
   }) => {
-    await page.goto(POST);
+    await page.goto("/blog/momentum-signal-decay");
 
     const note = page.locator("span.sidenote").first();
     // Below xl the note is hidden until its numbered marker is activated.
@@ -125,5 +180,41 @@ test.describe("sidenotes", () => {
 
     await page.locator("label.sidenote-ref").first().click();
     await expect(note).toBeVisible();
+  });
+});
+
+test.describe("table of contents", () => {
+  /**
+   * The navbar is sticky, so an un-offset anchor jump lands the heading at the
+   * viewport top and behind the bar. `scroll-margin-top` in globals.css is
+   * what keeps it visible, and nothing else would catch its removal.
+   */
+  test("a contents link lands the heading below the sticky navbar", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1400, height: 900 });
+    await page.goto(POST);
+
+    await page
+      .locator('nav[aria-labelledby="toc-heading"] a', {
+        hasText: "Building the machine",
+      })
+      .click();
+
+    await expect
+      .poll(async () =>
+        page.evaluate(() => {
+          const heading = [...document.querySelectorAll("h2")].find((h) =>
+            h.textContent?.includes("Building the machine"),
+          );
+          const header = document.querySelector("header");
+          if (!heading || !header) return -1;
+          return Math.round(
+            heading.getBoundingClientRect().top -
+              header.getBoundingClientRect().bottom,
+          );
+        }),
+      )
+      .toBeGreaterThanOrEqual(0);
   });
 });

@@ -6,6 +6,7 @@ import {
   ChartPreview,
   PaperCardPreview,
   SidenotePreview,
+  TablePreview,
 } from "@/components/admin/preview-components";
 import { Figure } from "@/components/site/mdx/figure";
 import { requireAdmin } from "@/lib/actions/guard";
@@ -40,6 +41,7 @@ export async function POST(request: Request) {
         Figure,
         PaperCard: PaperCardPreview,
         Sidenote: SidenotePreview,
+        Table: TablePreview,
       },
       options: mdxOptions,
     });

@@ -69,7 +69,9 @@ describe("admin MDX preview", () => {
       "",
       '<Callout type="tip">A tip.</Callout>',
       "",
-      '<Chart src="/figures/pairs-equity.json" />',
+      '<Chart slug="pairs-equity" />',
+      "",
+      '<Table slug="pairs-liquidity-ladder" />',
       "",
       '<Figure src="/x.png" alt="x" width={320} />',
       "",
@@ -88,6 +90,10 @@ describe("admin MDX preview", () => {
     const { html } = (await res.json()) as { html: string };
     expect(html).toContain("sidenote");
     expect(html).toContain("Chart"); // the ChartPreview placeholder
+    // Both <Chart> interfaces and <Table> need a preview twin; the real ones
+    // are async server components that renderToStaticMarkup cannot invoke.
+    expect(html).toContain('slug=&quot;pairs-equity&quot;');
+    expect(html).toContain("Data table");
     expect(html).toContain("data-rehype-pretty-code-figure");
     expect(html).toContain("katex");
   });

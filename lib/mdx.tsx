@@ -12,6 +12,7 @@ import { Figure } from "@/components/site/mdx/figure";
 import { PaperCard } from "@/components/site/mdx/paper-card";
 import { Pre } from "@/components/site/mdx/pre";
 import { Sidenote } from "@/components/site/mdx/sidenote";
+import { Table } from "@/components/site/mdx/table";
 
 /**
  * Admin-authored MDX only. MDX compiles to executable code, so this renderer
@@ -28,6 +29,7 @@ export const mdxComponents = {
   Figure,
   PaperCard,
   Sidenote,
+  Table,
   // Overriding `pre` adds the filename tab and copy button to every fenced
   // block without touching the rehype-pretty-code output.
   pre: Pre,

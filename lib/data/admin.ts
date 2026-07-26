@@ -207,3 +207,129 @@ export async function adminGetStats() {
     comments: comments.count ?? 0,
   };
 }
+
+/* ------------------------------ datasets -------------------------------- */
+
+export async function adminListDatasets() {
+  unstable_noStore();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("datasets")
+    // The embed is disambiguated by constraint name: `datasets` and
+    // `dataset_versions` reference each other (versions point at their
+    // dataset, the dataset points at its current version), so without the
+    // hint PostgREST resolves the wrong direction and returns one row.
+    .select(
+      "id, slug, name, status, updated_at, current_version_id, dataset_versions!dataset_versions_dataset_id_fkey(id, version, row_count)",
+    )
+    .order("updated_at", { ascending: false });
+  if (error) throw error;
+
+  // Row and column counts come from the current version, not the newest one:
+  // a rollback must be reflected in the list.
+  return data.map((dataset) => {
+    const current = dataset.dataset_versions.find(
+      (version) => version.id === dataset.current_version_id,
+    );
+    return {
+      ...dataset,
+      versionCount: dataset.dataset_versions.length,
+      currentVersion: current?.version ?? null,
+      rowCount: current?.row_count ?? 0,
+    };
+  });
+}
+
+export async function adminGetDataset(id: string) {
+  unstable_noStore();
+  const supabase = await createClient();
+
+  const [{ data: dataset, error }, { data: versions, error: versionsError }] =
+    await Promise.all([
+      supabase.from("datasets").select("*").eq("id", id).maybeSingle(),
+      supabase
+        .from("dataset_versions")
+        .select("id, version, row_count, checksum, source_name, note, created_at")
+        .eq("dataset_id", id)
+        .order("version", { ascending: false }),
+    ]);
+  if (error) throw error;
+  if (versionsError) throw versionsError;
+  if (!dataset) return null;
+
+  // Only the served version's payload is fetched; the history list carries
+  // metadata alone so opening the page never pulls every past payload.
+  const currentVersion = dataset.current_version_id
+    ? await supabase
+        .from("dataset_versions")
+        .select("id, version, columns, data")
+        .eq("id", dataset.current_version_id)
+        .maybeSingle()
+    : null;
+  if (currentVersion?.error) throw currentVersion.error;
+
+  return {
+    ...dataset,
+    versions: versions ?? [],
+    current: currentVersion?.data ?? null,
+  };
+}
+
+/** Charts that would break if this dataset were deleted or re-imported. */
+export async function adminDatasetUsage(id: string) {
+  unstable_noStore();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("chart_datasets")
+    .select("charts(id, slug, title, status)")
+    .eq("dataset_id", id);
+  if (error) throw error;
+  return (data ?? []).flatMap((row) => (row.charts ? [row.charts] : []));
+}
+
+/* ------------------------------- charts --------------------------------- */
+
+export async function adminListCharts() {
+  unstable_noStore();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("charts")
+    .select("id, slug, title, status, interactive, updated_at")
+    .order("updated_at", { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function adminGetChart(id: string) {
+  unstable_noStore();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("charts")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+/** Slug, name and column list for every dataset, for the chart editor's pickers. */
+export async function adminDatasetOptions() {
+  unstable_noStore();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("datasets")
+    .select(
+      "slug, name, current_version_id, dataset_versions!dataset_versions_dataset_id_fkey(id, columns)",
+    )
+    .order("name", { ascending: true });
+  if (error) throw error;
+
+  return data.map((dataset) => ({
+    slug: dataset.slug,
+    name: dataset.name,
+    columns:
+      dataset.dataset_versions.find(
+        (version) => version.id === dataset.current_version_id,
+      )?.columns ?? [],
+  }));
+}

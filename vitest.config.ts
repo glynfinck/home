@@ -21,7 +21,18 @@ export default defineConfig({
       {
         // Pure logic + component-contract tests. No database or server, so
         // this project runs standalone: `npm run test:unit`.
-        resolve: { alias: { "@": rootDir } },
+        resolve: {
+          alias: {
+            "@": rootDir,
+            // `server-only` throws on import outside a server bundle, which is
+            // the whole point of it — but it also makes the chart renderer
+            // untestable. Stub it so the module under test can be imported;
+            // the guarantee it encodes is enforced by the bundler, not here.
+            "server-only": fileURLToPath(
+              new URL("./tests/helpers/server-only-stub.ts", import.meta.url),
+            ),
+          },
+        },
         test: {
           name: "unit",
           include: ["tests/unit/**/*.test.{ts,tsx}"],

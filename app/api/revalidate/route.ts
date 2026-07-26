@@ -19,6 +19,11 @@ const TABLE_TAGS: Record<string, string[]> = {
   research_papers: [CACHE_TAGS.research],
   post_papers: [CACHE_TAGS.posts, CACHE_TAGS.research],
   tag_kinds: [CACHE_TAGS.tagKinds],
+  // A dataset edit changes what every chart drawing it renders, so both
+  // families are swept; the per-slug tags below narrow the common case.
+  datasets: [CACHE_TAGS.datasets, CACHE_TAGS.charts],
+  dataset_versions: [CACHE_TAGS.datasets, CACHE_TAGS.charts],
+  charts: [CACHE_TAGS.charts],
 };
 
 export async function POST(request: Request) {
@@ -45,6 +50,8 @@ export async function POST(request: Request) {
     if (body.table === "posts") tags.add(CACHE_TAGS.post(slug));
     if (body.table === "research_papers") tags.add(CACHE_TAGS.paper(slug));
     if (body.table === "projects") tags.add(CACHE_TAGS.project(slug));
+    if (body.table === "charts") tags.add(CACHE_TAGS.chart(slug));
+    if (body.table === "datasets") tags.add(CACHE_TAGS.dataset(slug));
   }
 
   // { expire: 0 } = immediate hard expiry — the very next request refetches.

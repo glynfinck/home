@@ -15,6 +15,7 @@ export function ChartFrame({
   source,
   controls,
   readout,
+  legend,
   table,
   children,
   className,
@@ -24,6 +25,11 @@ export function ChartFrame({
   source?: string;
   controls?: React.ReactNode;
   readout?: React.ReactNode;
+  /**
+   * Series key for multi-series figures. Always present when there are two or
+   * more series: identity must never depend on colour alone.
+   */
+  legend?: React.ReactNode;
   table?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
@@ -43,8 +49,10 @@ export function ChartFrame({
 
       <div className="px-2 pt-4 sm:px-4">{children}</div>
 
-      {readout ? (
-        <div className="px-4 pb-1 sm:px-4">{readout}</div>
+      {readout ? <div className="px-4 pb-1 sm:px-4">{readout}</div> : null}
+
+      {legend ? (
+        <div className="border-t border-border/60 px-4 py-3">{legend}</div>
       ) : null}
 
       {controls ? (

@@ -8,6 +8,10 @@ reproduce the published ones rather than a parallel re-derivation:
         paper_results.json          headline numbers + liquidity ladder buckets
         equity_curves_daily.csv     the three published equity curves
 
+Output is one CSV per dataset in `data/figures/` (gitignored), ready to import
+at /admin/datasets. Re-importing unchanged numbers is a no-op, so this is safe
+to re-run whenever the paper is re-run.
+
 Run it with either project's venv (both have pandas/duckdb):
 
     ~/Documents/Repositories/Research/ou-pairs-paper/.venv/bin/python \
@@ -40,17 +44,20 @@ trades and $1,896 net.
 
 from __future__ import annotations
 
+import csv
 import json
 from pathlib import Path
 
 import duckdb
+import numpy as np
 import pandas as pd
 
 PAPER = Path.home() / "Documents/Repositories/Research/ou-pairs-paper"
 RESULTS = PAPER / "results"
 GOLD = Path.home() / "Documents/Data/gold/ou_pairs"
+SILVER = Path.home() / "Documents/Data/silver/kraken_ohlcv_1m"
 TRADES = f"{GOLD}/trades/**/*.parquet"
-OUT = Path(__file__).resolve().parent.parent / "public/figures"
+OUT = Path(__file__).resolve().parent.parent / "data/figures"
 
 FEE_MAX_BPS = 30.0
 FEE_STEP_BPS = 0.25
@@ -198,18 +205,383 @@ def build_liquidity_ladder(results: dict) -> dict:
     }
 
 
+
+
+
+
+def build_crossover() -> dict:
+    """Relative error of each F'/F representation vs a quadrature reference.
+
+    This is the validation of the reformulation the post is built on: the
+    exact kernel holds to reference precision until SciPy's `pbdv` dies
+    (asymmetrically, by overflow at beta ~ +53 and underflow at ~ -41), and the
+    asymptotic forms take over from there.
+
+    Mirrors `fig_crossover` in the paper repo's scripts/build_figures.py; the
+    reference is that repo's own overflow-free log-domain quadrature.
+    """
+    import sys
+    import warnings
+
+    sys.path.insert(0, str(PAPER / "scripts"))
+    from scipy.special import pbdv  # noqa: PLC0415
+    from verify_math import log_integral  # noqa: PLC0415
+
+    a, alpha = 1.5, 0.5
+    betas = np.arange(-60.0, 60.5, 0.5)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        ref = np.array(
+            [np.exp(log_integral(alpha + 1, b) - log_integral(alpha, b)) for b in betas]
+        )
+    with np.errstate(all="ignore"):
+        d0, d0p = pbdv(-a, -betas)
+        exact = betas / 2 - d0p / d0
+    u_star = 0.5 * (betas + np.sqrt(betas**2 + 4 * alpha))
+    lam = -betas
+    with np.errstate(all="ignore"):
+        w0 = a / lam
+        w1 = w0 * (1 - (a + 1) / lam**2)
+
+    # Floor at the reference's own precision: below this the curve is measuring
+    # the reference, not the approximation.
+    FLOOR = 1e-13
+    err = lambda approx: np.maximum(np.abs(approx / ref - 1), FLOOR)  # noqa: E731
+
+    def points(values, mask=None):
+        """Series points, with non-finite values emitted as null.
+
+        The exact kernel genuinely has no value where pbdv overflows or
+        underflows — that gap IS the finding. `null` renders as a break in the
+        line; a bare NaN would be invalid JSON and fail JSON.parse outright.
+        """
+        out = []
+        for b, v in zip(betas, values):
+            if mask is not None and not mask(b):
+                continue
+            y = float(v)
+            out.append(
+                {"x": round(float(b), 2), "y": None if not np.isfinite(y) else round(y, 15)}
+            )
+        return out
+
+    return {
+        "kind": "lines",
+        "title": "The crossover is validated, not assumed",
+        "caption": (
+            "Each F'/F representation against an overflow-free log-domain "
+            "quadrature reference (a = 1.5). The exact kernel is good to "
+            "reference precision until SciPy's pbdv dies; the asymptotic "
+            "fallbacks take over from there. The floor is the reference's own "
+            "precision, not a failure."
+        ),
+        "meta": {"source": "verify_math.py quadrature reference, a = 1.5"},
+        "x": {"label": "beta = kappa (x - theta), displacement in units of sigma", "min": -62, "max": 62},
+        "y": {"label": "relative error vs reference", "scale": "log", "min": FLOOR, "max": 1e-1},
+        "series": [
+            {
+                "label": "Exact kernel ratio (Prop. 2)",
+                "directLabel": "exact kernel",
+                "labelAt": 0.78,
+                "points": points(err(exact)),
+                "colorIndex": 0,
+            },
+            {
+                "label": "Laplace",
+                "directLabel": "Laplace",
+                "labelAt": 0.45,
+                "points": points(err(u_star), mask=lambda b: b >= 8),
+                "colorIndex": 2,
+            },
+            {
+                "label": "Watson, leading order",
+                "directLabel": "Watson",
+                "labelAt": 0.45,
+                "points": points(err(w0), mask=lambda b: b <= -8),
+                "colorIndex": 1,
+            },
+            {
+                # Same entity at a higher order, so it shares the hue and is
+                # distinguished by dash rather than consuming a fourth slot.
+                "label": "Watson, 2nd-order correction",
+                "directLabel": "+ 2nd order",
+                "labelAt": 0.3,
+                "points": points(err(w1), mask=lambda b: b <= -8),
+                "colorIndex": 1,
+                "dash": True,
+            },
+        ],
+        "annotations": [
+            # Labels sit on the failing side of each threshold, so they name
+            # the region they describe rather than the one that still works.
+            {"x": 53.0, "label": "pbdv overflows", "align": "left"},
+            {"x": -41.3, "label": "pbdv underflows", "align": "right"},
+        ],
+    }
+
+
+
+# The single round trip the post uses as its worked example. Same trade as
+# ANATOMY in the paper repo's build_figures.py, so the figures agree.
+ANATOMY = {
+    "pair_id": 3409,
+    "leg_1": "LINKUSD",
+    "leg_2": "ZECUSD",
+    "entry_time": "2025-01-14 00:01:00",
+}
+
+
+def build_trade_anatomy() -> dict:
+    """One round trip at the computed optimal levels.
+
+    Rebuilds the spread from the two legs' 1-minute closes, then anchors it to
+    the trade's recorded entry spread: the stored d*/b*/theta levels live in
+    residual space, so without that shift the levels and the series would sit
+    on different axes. Resampled to 5 minutes, which is the resolution the
+    published figure uses and keeps the payload small.
+    """
+    con = duckdb.connect()
+    trades_file = GOLD / "trades" / f"pair_id={ANATOMY['pair_id']}" / "data.parquet"
+    trade = con.sql(
+        f"select * from read_parquet('{trades_file}') "
+        f"where entry_time = timestamp '{ANATOMY['entry_time']}'"
+    ).df()
+    if len(trade) != 1:
+        raise RuntimeError(f"anatomy trade not unique: {len(trade)} rows")
+    tr = trade.iloc[0].to_dict()
+
+    t0 = pd.Timestamp(tr["entry_time"]) - pd.Timedelta(hours=24)
+    t1 = pd.Timestamp(tr["exit_time"]) + pd.Timedelta(hours=8)
+    frames = {}
+    for leg in ("leg_1", "leg_2"):
+        path = SILVER / f"symbol={ANATOMY[leg]}" / "data.parquet"
+        frames[leg] = con.sql(
+            f"""select timestamp, close from read_parquet('{path}')
+                where timestamp between timestamp '{t0}' and timestamp '{t1}'
+                order by timestamp"""
+        ).df()
+
+    df = frames["leg_1"].merge(frames["leg_2"], on="timestamp", suffixes=("_1", "_2"))
+    df["raw"] = df["close_1"] - tr["hedge_ratio"] * df["close_2"]
+    at_entry = df.loc[
+        (df["timestamp"] - pd.Timestamp(tr["entry_time"])).abs().idxmin(), "raw"
+    ]
+    df["spread"] = df["raw"] - (at_entry - tr["spread_entry"])
+    df = (
+        df.set_index("timestamp")["spread"]
+        .resample("5min")
+        .last()
+        .dropna()
+        .reset_index()
+    )
+
+    start = df["timestamp"].iloc[0]
+    to_hours = lambda ts: round((pd.Timestamp(ts) - start).total_seconds() / 3600, 3)  # noqa: E731
+
+    return {
+        "kind": "lines",
+        "title": "One round trip at the Leung-Li optimal levels",
+        "caption": (
+            f"{ANATOMY['leg_1']} - {tr['hedge_ratio']:.2f} x {ANATOMY['leg_2']}, "
+            "January 2025: entry below d*, sixty hours of noise, exit above b*."
+        ),
+        "meta": {"source": "Kraken spot, 1-min bars resampled to 5 min"},
+        "x": {"label": "Hours from start of window"},
+        "y": {
+            "label": f"Spread ({ANATOMY['leg_1']} - {tr['hedge_ratio']:.2f} x {ANATOMY['leg_2']})",
+            "format": "plain",
+        },
+        "series": [
+            {
+                "label": "Spread",
+                "points": [
+                    {"x": to_hours(t), "y": round(float(v), 6)}
+                    for t, v in zip(df["timestamp"], df["spread"])
+                ],
+                "colorIndex": 0,
+            }
+        ],
+        "levels": [
+            {"value": round(float(tr["ou_theta_entry"]), 6), "label": "theta (long-run mean)"},
+            {"value": round(float(tr["entry_level"]), 6), "label": "optimal entry d*"},
+            {"value": round(float(tr["exit_level"]), 6), "label": "optimal exit b*"},
+        ],
+        "markers": [
+            {
+                "x": to_hours(tr["entry_time"]),
+                "y": round(float(tr["spread_entry"]), 6),
+                "label": "enter",
+            },
+            {
+                "x": to_hours(tr["exit_time"]),
+                "y": round(float(tr["spread_exit"]), 6),
+                "label": "exit",
+            },
+        ],
+    }
+
+
+def quiet_x_for(value, points, x_min, x_max, segments=12):
+    """Centre of whichever x-segment leaves the most vertical room around
+    `value`. Level labels are placed here rather than in a fixed corner, which
+    buried them under the data."""
+    width = (x_max - x_min) / segments
+    best_centre = x_min + width / 2
+    best_clearance = float("-inf")
+
+    for i in range(segments):
+        lo = x_min + i * width
+        hi = lo + width
+        clearance = float("inf")
+        for point in points:
+            if point["y"] is None or point["x"] < lo or point["x"] > hi:
+                continue
+            clearance = min(clearance, abs(point["y"] - value))
+        if clearance == float("inf"):
+            clearance = 1e18
+        if clearance > best_clearance:
+            best_clearance = clearance
+            best_centre = lo + width / 2
+    return best_centre
+
+
+def anchor_at(points, at):
+    """The point `at` (0..1) of the way along a series' defined points."""
+    defined = [p for p in points if p["y"] is not None]
+    clamped = min(max(at, 0.0), 1.0)
+    index = min(round((len(defined) - 1) * clamped), len(defined) - 1)
+    return defined[index]
+
+
+def to_rows(equity, ladder, crossover, anatomy):
+    """The nine datasets the site draws, as flat rows.
+
+    Layout that the old renderers computed at draw time has no equivalent in a
+    Vega-Lite spec, so the anchors for direct labels and level labels are
+    computed here and stored as ordinary columns.
+    """
+    spread = anatomy["series"][0]["points"]
+    xs = [p["x"] for p in spread]
+    x_min, x_max = min(xs), max(xs)
+    inset = (x_max - x_min) * 0.1
+
+    series = equity["series"]
+    start_date = pd.Timestamp(series["start"])
+
+    return {
+        "pairs-equity-daily": (
+            ["day", "date", "gross", "turnover"],
+            [
+                [
+                    day,
+                    (start_date + pd.Timedelta(days=int(day))).strftime("%Y-%m-%d"),
+                    series["gross"][i],
+                    series["turnover"][i],
+                ]
+                for i, day in enumerate(series["day"])
+            ],
+        ),
+        "pairs-winrate-grid": (
+            ["bps", "rate"],
+            list(zip(equity["winRate"]["bps"], equity["winRate"]["rate"])),
+        ),
+        "pairs-liquidity-ladder": (
+            ["rank_bucket", "gross_pnl", "net_pnl_2bps", "trades"],
+            [
+                [
+                    bucket,
+                    ladder["series"][0]["values"][i],
+                    ladder["series"][1]["values"][i],
+                    ladder["trades"][i],
+                ]
+                for i, bucket in enumerate(ladder["x"]["values"])
+            ],
+        ),
+        "pairs-crossover-error": (
+            ["beta", "series", "rel_error"],
+            [
+                [point["x"], s["label"], point["y"]]
+                for s in crossover["series"]
+                for point in s["points"]
+            ],
+        ),
+        "pairs-crossover-labels": (
+            ["beta", "rel_error", "label"],
+            [
+                [
+                    anchor_at(s["points"], s.get("labelAt", 0.5))["x"],
+                    anchor_at(s["points"], s.get("labelAt", 0.5))["y"],
+                    s["directLabel"],
+                ]
+                for s in crossover["series"]
+                if s.get("directLabel")
+            ],
+        ),
+        "pairs-crossover-annotations": (
+            ["beta", "label", "align"],
+            [
+                [a["x"], a["label"], a.get("align", "left")]
+                for a in crossover["annotations"]
+            ],
+        ),
+        "pairs-trade-spread": (
+            ["hours", "spread"],
+            [[p["x"], p["y"]] for p in spread],
+        ),
+        "pairs-trade-levels": (
+            ["value", "label", "label_x"],
+            [
+                [
+                    level["value"],
+                    level["label"],
+                    # Clamped off the edges: the label is centred on its
+                    # anchor, so an anchor in the outer tenth hangs the text
+                    # outside the plot.
+                    min(
+                        max(
+                            quiet_x_for(level["value"], spread, x_min, x_max),
+                            x_min + inset,
+                        ),
+                        x_max - inset,
+                    ),
+                ]
+                for level in anatomy["levels"]
+            ],
+        ),
+        "pairs-trade-markers": (
+            ["hours", "spread", "label"],
+            [[m["x"], m["y"], m["label"]] for m in anatomy["markers"]],
+        ),
+    }
+
+
 def main() -> None:
+    """Write one CSV per dataset, ready to import at /admin/datasets.
+
+    The site reads figures from Postgres now: `datasets` hold the numbers and
+    `charts` hold a Vega-Lite spec that draws them. Re-importing a CSV whose
+    contents have not changed is a no-op, so running this after a re-run of the
+    paper is safe.
+    """
     results = json.loads((RESULTS / "paper_results.json").read_text())
     OUT.mkdir(parents=True, exist_ok=True)
 
-    for name, payload in [
-        ("pairs-equity.json", build_equity(results)),
-        ("pairs-volume-rank.json", build_liquidity_ladder(results)),
-    ]:
-        path = OUT / name
-        path.write_text(json.dumps(payload, separators=(",", ":")) + "\n")
-        print(f"wrote {path.name} ({path.stat().st_size / 1024:.1f} KB)")
+    datasets = to_rows(
+        build_equity(results),
+        build_liquidity_ladder(results),
+        build_crossover(),
+        build_trade_anatomy(),
+    )
 
-
-if __name__ == "__main__":
-    main()
+    for slug, (header, rows) in datasets.items():
+        path = OUT / f"{slug}.csv"
+        with path.open("w", newline="") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(header)
+            # None becomes an empty field, which the importer reads as a gap
+            # rather than a zero.
+            writer.writerows(
+                [["" if value is None else value for value in row] for row in rows]
+            )
+        print(f"wrote {path.name} ({len(rows)} rows, {path.stat().st_size / 1024:.1f} KB)")

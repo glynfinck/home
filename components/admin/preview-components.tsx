@@ -116,18 +116,34 @@ export function SidenotePreview({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * The real <Chart> reads its payload from disk or the media bucket and hands
- * it to a client component. Neither is possible under renderToStaticMarkup,
- * so the preview confirms the reference and the surrounding layout.
+ * The real <Chart> resolves its spec and datasets from the database and
+ * renders them to SVG in an async server component. `renderToStaticMarkup`
+ * can invoke neither, so the preview confirms the reference and the
+ * surrounding layout instead.
  */
-export function ChartPreview({ src }: { src: string }) {
+export function ChartPreview({ slug }: { slug?: string }) {
   return (
     <div className="not-prose my-8 rounded-lg border border-dashed bg-card p-5">
       <p className="font-mono text-xs tracking-wide text-brand uppercase">
         Figure
       </p>
       <p className="mt-2 font-mono text-sm break-all text-muted-foreground">
-        &lt;Chart src=&quot;{src}&quot; /&gt; renders on the published page
+        &lt;Chart slug=&quot;{slug ?? ""}&quot; /&gt; renders on the published
+        page
+      </p>
+    </div>
+  );
+}
+
+/** Same constraint as <Chart>: the real <Table> reads the dataset server-side. */
+export function TablePreview({ slug }: { slug: string }) {
+  return (
+    <div className="not-prose my-8 rounded-lg border border-dashed bg-card p-5">
+      <p className="font-mono text-xs tracking-wide text-brand uppercase">
+        Data table
+      </p>
+      <p className="mt-2 font-mono text-sm break-all text-muted-foreground">
+        &lt;Table slug=&quot;{slug}&quot; /&gt; renders on the published page
       </p>
     </div>
   );

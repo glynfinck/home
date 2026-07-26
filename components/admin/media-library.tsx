@@ -106,7 +106,9 @@ export function MediaLibrary() {
       for (const file of files) {
         await uploadToMediaBucket(
           file,
-          file.type === "application/pdf" ? "files" : "mdx",
+          file.type === "application/pdf" || file.type === "application/json"
+            ? "files"
+            : "mdx",
         );
       }
       toast.success(files.length === 1 ? "Uploaded" : `${files.length} uploaded`);
@@ -139,7 +141,7 @@ export function MediaLibrary() {
         <input
           ref={inputRef}
           type="file"
-          accept={`${MEDIA_IMAGE_ACCEPT},application/pdf`}
+          accept={`${MEDIA_IMAGE_ACCEPT},application/pdf,application/json`}
           multiple
           className="hidden"
           onChange={(e) => {
@@ -153,9 +155,10 @@ export function MediaLibrary() {
         </Button>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">
-        Images and files in the public media bucket. Reference images from any
-        MDX field with a{" "}
-        <code className="font-mono text-xs">&lt;Figure /&gt;</code> — copy the
+        Images, PDFs, and chart data in the public media bucket. Reference an
+        image with a <code className="font-mono text-xs">&lt;Figure /&gt;</code>{" "}
+        and a JSON payload with a{" "}
+        <code className="font-mono text-xs">&lt;Chart /&gt;</code> — copy the
         snippet below.
       </p>
 
