@@ -509,6 +509,19 @@
     .sidenote-ref input {
       display: none;
     }
+
+    /* Inside a callout the flex-item wrapper is a BFC, so it would contain
+       the float and stretch the aside to the note's full height. Zeroing the
+       box height lets the note overflow into the margin without inflating
+       the callout; the trade-off is that a note anchored shortly after won't
+       clear past this one, which margin notes this sparse never hit. The
+       extra 1rem + 1px cancels the callout's px-4 padding and border so the
+       note keeps the same left edge as notes outside callouts. */
+    aside .sidenote {
+      height: 0;
+      margin-block: 0.25rem 0;
+      margin-right: calc(-15rem - 1px);
+    }
   }
 
   @media print {
