@@ -16,6 +16,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ADMIN_NAV } from "@/components/admin/nav-items";
+import { LinkPending } from "@/components/site/route-progress";
 
 /**
  * Overview ("/admin") is a prefix of every admin route, so it must match
@@ -51,6 +52,7 @@ export function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
             )}
           >
             <Icon className="size-4" /> {label}
+            <LinkPending />
           </Link>
         );
       })}
@@ -97,6 +99,7 @@ export function AdminMobileNav() {
                 )}
               >
                 {label}
+                <LinkPending />
               </Link>
             );
           })}

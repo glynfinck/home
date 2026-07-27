@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
+import { CardGridSkeleton } from "@/components/site/loading-shell";
 import { ProjectCard } from "@/components/site/project-card";
-import { TerminalLoader } from "@/components/site/terminal-loader";
 import { TypedTextInView } from "@/components/site/typed-text-in-view";
 import { getPublishedProjects } from "@/lib/data/projects";
 import { getTagIconMap } from "@/lib/data/tag-kinds";
@@ -29,9 +29,11 @@ export default function ProjectsPage() {
           would sit above [slug] and commit HTTP 200 before its notFound() */}
       <Suspense
         fallback={
-          <div className="mt-10">
-            <TerminalLoader command="ls projects/" />
-          </div>
+          <CardGridSkeleton
+            command="ls projects/"
+            cards={6}
+            columns="sm:grid-cols-2 lg:grid-cols-3"
+          />
         }
       >
         <ProjectGrid />

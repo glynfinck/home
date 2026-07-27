@@ -10,6 +10,7 @@ import { Suspense } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ArticleBodySkeleton } from "@/components/site/loading-shell";
 import { Comments } from "@/components/site/comments/comments";
 import { PostRow } from "@/components/site/post-card";
 import { ReadingProgress } from "@/components/site/reading-progress";
@@ -18,6 +19,7 @@ import { ViewTracker } from "@/components/site/view-tracker";
 import {
   getPapersForPost,
   getPostBySlug,
+  getPublishedPosts,
   getRelatedPosts,
 } from "@/lib/data/posts";
 import { formatDate } from "@/lib/format";
@@ -25,6 +27,25 @@ import { Mdx } from "@/lib/mdx";
 import { extractToc } from "@/lib/toc";
 
 type Props = { params: Promise<{ slug: string }> };
+
+/**
+ * The slugs this route would prerender — currently it does not.
+ *
+ * `<Comments>` reads the session to decide whether to show the composer, and
+ * Next 16 removed per-route PPR (`experimental_ppr`) in favour of the app-wide
+ * `cacheComponents` flag. Without that flag a single cookie read anywhere in
+ * the tree marks the whole route dynamic, so `next build` reports this one as ƒ
+ * while /projects/[slug], /research/[slug] and /blog/tag/[tag] report ●.
+ *
+ * Left in place because it is correct and inert: the moment the session read
+ * moves out of the server tree — or `cacheComponents` is turned on — this route
+ * prerenders with no further change. Until then the route's speed comes from
+ * ./loading.tsx and the boundaries below, not from here.
+ */
+export async function generateStaticParams() {
+  const posts = await getPublishedPosts();
+  return posts.map((post) => ({ slug: post.slug }));
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -114,7 +135,13 @@ export default async function BlogPostPage({ params }: Props) {
               <div className="xl:hidden">
                 <Toc entries={toc} variant="inline" />
               </div>
-              <Mdx source={post.content} />
+              {/* The header above resolves from one cached row; the body has to
+                  compile MDX, highlight every code block and render each
+                  figure's SVG. Behind a boundary the title, date and table of
+                  contents paint without waiting for any of that. */}
+              <Suspense fallback={<ArticleBodySkeleton />}>
+                <Mdx source={post.content} />
+              </Suspense>
             </div>
 
             {papers.length > 0 ? (

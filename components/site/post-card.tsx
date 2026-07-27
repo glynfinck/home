@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
+import { LinkPending } from "@/components/site/route-progress";
 import { formatDate } from "@/lib/format";
 import type { PostListItem } from "@/lib/data/posts";
 
@@ -12,6 +13,7 @@ export function PostRow({ post }: { post: PostListItem }) {
           <h3 className="font-medium tracking-tight transition-colors duration-150 group-hover:text-brand">
             {post.title}
           </h3>
+          <LinkPending />
         </Link>
         <time
           dateTime={post.published_at ?? undefined}

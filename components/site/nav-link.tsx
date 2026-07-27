@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { LinkPending } from "@/components/site/route-progress";
 import { cn } from "@/lib/utils";
 
 export function NavLink({
@@ -30,6 +31,7 @@ export function NavLink({
       )}
     >
       {children}
+      <LinkPending />
     </Link>
   );
 }

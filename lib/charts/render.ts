@@ -5,6 +5,7 @@ import * as vegaLite from "vega-lite";
 
 import type { DatasetPayload } from "@/lib/charts/dataset";
 import { toRows } from "@/lib/charts/dataset";
+import { BREAKPOINTS, type Breakpoint } from "@/lib/charts/geometry";
 
 /**
  * Vega-Lite spec to SVG string, on the server.
@@ -48,21 +49,10 @@ vega.formatLocale({
   minus: "-",
 });
 
-/** Two rendered widths, chosen by CSS. See `ChartFigure`. */
-export const BREAKPOINTS = {
-  narrow: {
-    width: 360,
-    height: 260,
-    padding: { left: 44, top: 12, right: 10, bottom: 32 },
-  },
-  wide: {
-    width: 720,
-    height: 314,
-    padding: { left: 56, top: 16, right: 16, bottom: 34 },
-  },
-} as const;
-
-export type Breakpoint = keyof typeof BREAKPOINTS;
+// Re-exported so the renderer stays the obvious import for anything that
+// renders; the definitions live in ./geometry because the loading fallbacks
+// need the heights and must not pull vega in to get them.
+export { BREAKPOINTS, type Breakpoint } from "@/lib/charts/geometry";
 
 /**
  * Site chrome for every figure.

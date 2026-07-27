@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
 import { GitHubIcon } from "@/components/site/social-icons";
+import { LinkPending } from "@/components/site/route-progress";
 import { StackBadge } from "@/components/site/stack-badge";
 import type { Project } from "@/lib/data/projects";
 
@@ -19,6 +20,7 @@ export function ProjectCard({
           <h3 className="font-medium tracking-tight transition-colors duration-150 group-hover:text-brand">
             {project.title}
           </h3>
+          <LinkPending />
         </Link>
         <div className="flex items-center gap-2">
           {project.github_url ? (

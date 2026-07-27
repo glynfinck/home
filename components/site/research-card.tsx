@@ -3,6 +3,7 @@ import { Download, FileText } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { LinkPending } from "@/components/site/route-progress";
 import { formatDate } from "@/lib/format";
 import type { ResearchPaper } from "@/lib/data/research";
 
@@ -22,6 +23,7 @@ export function ResearchCard({ paper }: { paper: ResearchPaper }) {
         <h3 className="mt-3 font-medium tracking-tight transition-colors duration-150 group-hover:text-brand">
           {paper.title}
         </h3>
+        <LinkPending />
       </Link>
       <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
         {paper.abstract}

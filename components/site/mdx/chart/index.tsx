@@ -1,5 +1,8 @@
+import { Suspense } from "react";
+
 import { ChartError } from "@/components/site/mdx/chart/chart-frame";
 import { ChartFigure, DatasetTable } from "@/components/site/mdx/chart/chart-figure";
+import { ChartPending } from "@/components/site/mdx/chart/chart-pending";
 import {
   InteractiveFigure,
   type ControlConfig,
@@ -16,11 +19,17 @@ import { getChartBySlug, type ResolvedChart } from "@/lib/data/charts";
  * rather than a URL. After hydration a live Vega view takes over the same
  * spec, which is where tooltips and parameter redraws come from.
  *
+ * Each figure sits behind its own boundary, which is what lets the prose reach
+ * the reader first. Without it the whole article waits on the slowest dataset
+ * query, and an article carries four of these — so the paragraph above figure
+ * one is held back by figure four for no reason the reader can see. The
+ * fallback reserves the exact final height, so filling them in shifts nothing.
+ *
  * `title` and `caption` override what the chart record carries. The record
  * describes the data; a caption is part of the article's argument, so it
  * belongs in the MDX where it stays next to the prose it supports.
  */
-export async function Chart({
+export function Chart({
   slug,
   title,
   caption,
@@ -29,7 +38,11 @@ export async function Chart({
   title?: string;
   caption?: string;
 }) {
-  return <DatabaseChart slug={slug} title={title} caption={caption} />;
+  return (
+    <Suspense fallback={<ChartPending />}>
+      <DatabaseChart slug={slug} title={title} caption={caption} />
+    </Suspense>
+  );
 }
 
 /** Vega-Lite ignores `usermeta`, which makes it the place for anything the grammar has no opinion about. */

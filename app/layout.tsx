@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { RouteProgress } from "@/components/site/route-progress";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { getSeoSettings } from "@/lib/data/settings";
@@ -57,6 +58,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          {/* Above the site and admin trees both, so every navigation in the
+              app reports through the same indicator. */}
+          <RouteProgress />
           {children}
           <Toaster />
         </ThemeProvider>
