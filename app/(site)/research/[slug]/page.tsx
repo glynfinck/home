@@ -5,16 +5,29 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Download } from "lucide-react";
 
+import { Suspense } from "react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ArticleBodySkeleton } from "@/components/site/loading-shell";
 import { ReadingProgress } from "@/components/site/reading-progress";
 import { Toc } from "@/components/site/toc";
-import { getPaperBySlug, getPostsForPaper } from "@/lib/data/research";
+import {
+  getPaperBySlug,
+  getPostsForPaper,
+  getPublishedPapers,
+} from "@/lib/data/research";
 import { formatBytes, formatDate } from "@/lib/format";
 import { Mdx } from "@/lib/mdx";
 import { extractToc } from "@/lib/toc";
 
 type Props = { params: Promise<{ slug: string }> };
+
+/** Prerendered at build so the link is fully prefetched. See the blog route. */
+export async function generateStaticParams() {
+  const papers = await getPublishedPapers();
+  return papers.map((paper) => ({ slug: paper.slug }));
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -113,7 +126,12 @@ export default async function ResearchPaperPage({ params }: Props) {
                 <div className="xl:hidden">
                   <Toc entries={toc} variant="inline" />
                 </div>
-                <Mdx source={paper.content} />
+                {/* The abstract and download button above are the point of the
+                    page and resolve from one cached row; the body has to
+                    compile MDX and render any figures in it. */}
+                <Suspense fallback={<ArticleBodySkeleton />}>
+                  <Mdx source={paper.content} />
+                </Suspense>
               </div>
             ) : null}
 

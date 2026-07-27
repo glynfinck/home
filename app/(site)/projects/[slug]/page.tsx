@@ -5,14 +5,23 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 
+import { Suspense } from "react";
+
+import { ArticleBodySkeleton } from "@/components/site/loading-shell";
 import { GitHubIcon } from "@/components/site/social-icons";
 import { StackBadge } from "@/components/site/stack-badge";
-import { getProjectBySlug } from "@/lib/data/projects";
+import { getProjectBySlug, getPublishedProjects } from "@/lib/data/projects";
 import { getTagIconMap } from "@/lib/data/tag-kinds";
 import { formatDate } from "@/lib/format";
 import { Mdx } from "@/lib/mdx";
 
 type Props = { params: Promise<{ slug: string }> };
+
+/** Prerendered at build so the link is fully prefetched. See the blog route. */
+export async function generateStaticParams() {
+  const projects = await getPublishedProjects();
+  return projects.map((project) => ({ slug: project.slug }));
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -120,7 +129,9 @@ export default async function ProjectPage({ params }: Props) {
 
         <div className="min-w-0">
           {project.content ? (
-            <Mdx source={project.content} />
+            <Suspense fallback={<ArticleBodySkeleton />}>
+              <Mdx source={project.content} />
+            </Suspense>
           ) : project.description ? (
             <div className="space-y-4 leading-relaxed text-muted-foreground">
               {project.description.split("\n\n").map((paragraph, i) => (
