@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { RouteProgress } from "@/components/site/route-progress";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -63,6 +64,10 @@ export default function RootLayout({
           <RouteProgress />
           {children}
           <Toaster />
+          {/* Vercel Web Analytics: pageviews, referrers, countries and
+              devices. Cookieless and no fingerprinting, so it needs no
+              consent banner. Inert outside Vercel, so local dev is unaffected. */}
+          <Analytics />
         </ThemeProvider>
       </body>
     </html>

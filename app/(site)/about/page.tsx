@@ -74,7 +74,8 @@ export default async function AboutPage() {
       <div className="mt-8 flex flex-wrap items-center gap-3">
         {profile.resume_url ? (
           <Button asChild>
-            <a href={profile.resume_url} target="_blank" rel="noreferrer">
+            {/* Tracked redirect — see `/api/resume`. */}
+            <a href="/api/resume" target="_blank" rel="noopener">
               <FileDown className="size-4" /> Download resume
             </a>
           </Button>

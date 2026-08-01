@@ -61,7 +61,10 @@ export default async function HomePage() {
             </Button>
             {profile.resume_url ? (
               <Button asChild variant="outline">
-                <a href={profile.resume_url} target="_blank" rel="noreferrer">
+                {/* `/api/resume` logs the click, then redirects to the PDF.
+                    Keep `referrerPolicy` default so the route can record
+                    which page the download started from. */}
+                <a href="/api/resume" target="_blank" rel="noopener">
                   <FileDown className="size-4" /> Resume
                 </a>
               </Button>

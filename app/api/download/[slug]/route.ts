@@ -1,5 +1,7 @@
+import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 
+import { downloadContext } from "@/lib/download-context";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -31,7 +33,12 @@ export async function GET(
   }
 
   // Attributes user_id via auth.uid() when a session exists
-  await supabase.rpc("log_paper_download", { paper_slug: paper.slug });
+  const { referrer, country } = downloadContext(await headers());
+  await supabase.rpc("log_paper_download", {
+    paper_slug: paper.slug,
+    p_referrer: referrer,
+    p_country: country,
+  });
 
   const admin = createAdminClient();
   const { data: signed, error } = await admin.storage

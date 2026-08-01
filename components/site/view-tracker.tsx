@@ -14,7 +14,15 @@ export function ViewTracker({ slug }: { slug: string }) {
     counted.add(slug);
 
     const supabase = createClient();
-    void supabase.rpc("increment_post_views", { post_slug: slug });
+    // `.rpc()` returns a lazy thenable, not a promise: postgrest-js only
+    // issues the request inside `then()`. Dropping the builder on the floor
+    // (`void supabase.rpc(...)`) silently sends nothing — which is how every
+    // post sat at zero views. Keep the `.then()`.
+    void supabase
+      .rpc("increment_post_views", { post_slug: slug })
+      .then(({ error }) => {
+        if (error) console.warn("view tracking failed", error.message);
+      });
   }, [slug]);
 
   return null;

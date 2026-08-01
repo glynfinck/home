@@ -181,14 +181,24 @@ export async function adminGetStats() {
   unstable_noStore();
   const supabase = await createClient();
 
-  const [posts, papers, comments, downloads] = await Promise.all([
-    supabase.from("posts").select("status, view_count"),
-    supabase.from("research_papers").select("status, download_count"),
-    supabase.from("comments").select("status", { count: "exact", head: true }),
-    supabase
-      .from("paper_downloads")
-      .select("id", { count: "exact", head: true }),
-  ]);
+  const [posts, papers, comments, hidden, downloads, resumeDownloads] =
+    await Promise.all([
+      supabase.from("posts").select("status, view_count"),
+      supabase.from("research_papers").select("status, download_count"),
+      supabase
+        .from("comments")
+        .select("status", { count: "exact", head: true }),
+      supabase
+        .from("comments")
+        .select("status", { count: "exact", head: true })
+        .eq("status", "hidden"),
+      supabase
+        .from("paper_downloads")
+        .select("id", { count: "exact", head: true }),
+      supabase
+        .from("resume_downloads")
+        .select("id", { count: "exact", head: true }),
+    ]);
 
   const totalViews = (posts.data ?? []).reduce(
     (sum, p) => sum + (p.view_count ?? 0),
@@ -204,7 +214,166 @@ export async function adminGetStats() {
     totalViews,
     papers: papers.data?.length ?? 0,
     totalDownloads: downloads.count ?? 0,
+    totalResumeDownloads: resumeDownloads.count ?? 0,
     comments: comments.count ?? 0,
+    hiddenComments: hidden.count ?? 0,
+  };
+}
+
+/* ------------------------------ analytics ------------------------------- */
+
+/** One UTC day of the downloads chart. */
+export type DownloadDay = { date: string; papers: number; resume: number };
+
+export type DownloadEvent = {
+  id: string;
+  kind: "paper" | "resume";
+  /** Paper title, or "Resume". */
+  label: string;
+  /** Paper slug; null for the resume. */
+  slug: string | null;
+  at: string;
+  country: string | null;
+  referrer: string | null;
+  /** Display name when the downloader was signed in, else null. */
+  who: string | null;
+};
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** UTC calendar day, `YYYY-MM-DD`. */
+function utcDay(iso: string) {
+  return iso.slice(0, 10);
+}
+
+/**
+ * Everything the admin dashboard plots.
+ *
+ * Downloads are bucketed by UTC day in JS rather than SQL: the window is
+ * bounded to `days`, so this reads at most a few hundred rows and avoids a
+ * materialised view that would need its own migration to reshape.
+ *
+ * `paper_downloads.user_id` references `auth.users`, not `profiles`, so
+ * PostgREST can't embed the display name — the names are fetched in a second
+ * pass keyed on the ids actually present.
+ */
+export async function adminGetAnalytics(days = 30) {
+  unstable_noStore();
+  const supabase = await createClient();
+
+  const since = new Date(Date.now() - (days - 1) * DAY_MS);
+  since.setUTCHours(0, 0, 0, 0);
+  const sinceIso = since.toISOString();
+
+  const [papers, resume, allPapers, posts] = await Promise.all([
+    supabase
+      .from("paper_downloads")
+      .select(
+        "id, downloaded_at, country, referrer, user_id, research_papers(slug, title)",
+      )
+      .gte("downloaded_at", sinceIso)
+      .order("downloaded_at", { ascending: false }),
+    supabase
+      .from("resume_downloads")
+      .select("id, downloaded_at, country, referrer, user_id")
+      .gte("downloaded_at", sinceIso)
+      .order("downloaded_at", { ascending: false }),
+    // Published only: an unpublished draft can't have been downloaded, so it
+    // would only ever pad the list with zeroes.
+    supabase
+      .from("research_papers")
+      .select("slug, title, download_count")
+      .eq("status", "published")
+      .order("download_count", { ascending: false })
+      .limit(5),
+    supabase
+      .from("posts")
+      .select("slug, title, view_count, status")
+      .eq("status", "published")
+      .order("view_count", { ascending: false })
+      .limit(5),
+  ]);
+
+  if (papers.error) throw papers.error;
+  if (resume.error) throw resume.error;
+  if (allPapers.error) throw allPapers.error;
+  if (posts.error) throw posts.error;
+
+  // Resolve display names for the (few) downloads that were signed in.
+  const userIds = [
+    ...new Set(
+      [...papers.data, ...resume.data]
+        .map((row) => row.user_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  const names = new Map<string, string | null>();
+  if (userIds.length > 0) {
+    const { data: profiles, error } = await supabase
+      .from("profiles")
+      .select("id, display_name")
+      .in("id", userIds);
+    if (error) throw error;
+    for (const profile of profiles ?? []) {
+      names.set(profile.id, profile.display_name);
+    }
+  }
+
+  const events: DownloadEvent[] = [
+    ...papers.data.map((row) => ({
+      id: `paper-${row.id}`,
+      kind: "paper" as const,
+      label: row.research_papers?.title ?? "Unknown paper",
+      slug: row.research_papers?.slug ?? null,
+      at: row.downloaded_at,
+      country: row.country,
+      referrer: row.referrer,
+      who: row.user_id ? (names.get(row.user_id) ?? null) : null,
+    })),
+    ...resume.data.map((row) => ({
+      id: `resume-${row.id}`,
+      kind: "resume" as const,
+      label: "Resume",
+      slug: null,
+      at: row.downloaded_at,
+      country: row.country,
+      referrer: row.referrer,
+      who: row.user_id ? (names.get(row.user_id) ?? null) : null,
+    })),
+  ].sort((a, b) => b.at.localeCompare(a.at));
+
+  // Zero-filled so quiet days are visible as gaps rather than collapsed out.
+  const buckets = new Map<string, DownloadDay>();
+  for (let i = 0; i < days; i++) {
+    const date = new Date(since.getTime() + i * DAY_MS)
+      .toISOString()
+      .slice(0, 10);
+    buckets.set(date, { date, papers: 0, resume: 0 });
+  }
+  for (const event of events) {
+    const bucket = buckets.get(utcDay(event.at));
+    if (bucket) bucket[event.kind === "paper" ? "papers" : "resume"] += 1;
+  }
+
+  // Country mix across both download kinds, busiest first.
+  const countries = new Map<string, number>();
+  for (const event of events) {
+    const key = event.country ?? "Unknown";
+    countries.set(key, (countries.get(key) ?? 0) + 1);
+  }
+
+  return {
+    days,
+    series: [...buckets.values()],
+    events,
+    recentPaperDownloads: papers.data.length,
+    recentResumeDownloads: resume.data.length,
+    topPapers: allPapers.data,
+    topPosts: posts.data,
+    topCountries: [...countries.entries()]
+      .map(([code, count]) => ({ code, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6),
   };
 }
 
