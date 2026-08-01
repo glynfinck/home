@@ -264,21 +264,27 @@ export type Database = {
       }
       paper_downloads: {
         Row: {
+          country: string | null
           downloaded_at: string
           id: number
           paper_id: string
+          referrer: string | null
           user_id: string | null
         }
         Insert: {
+          country?: string | null
           downloaded_at?: string
           id?: never
           paper_id: string
+          referrer?: string | null
           user_id?: string | null
         }
         Update: {
+          country?: string | null
           downloaded_at?: string
           id?: never
           paper_id?: string
+          referrer?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -495,6 +501,30 @@ export type Database = {
         }
         Relationships: []
       }
+      resume_downloads: {
+        Row: {
+          country: string | null
+          downloaded_at: string
+          id: number
+          referrer: string | null
+          user_id: string | null
+        }
+        Insert: {
+          country?: string | null
+          downloaded_at?: string
+          id?: never
+          referrer?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          country?: string | null
+          downloaded_at?: string
+          id?: never
+          referrer?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           key: string
@@ -548,7 +578,14 @@ export type Database = {
         Args: { p_parent_id: string; p_post_id: string }
         Returns: boolean
       }
-      log_paper_download: { Args: { paper_slug: string }; Returns: undefined }
+      log_paper_download: {
+        Args: { p_country?: string; p_referrer?: string; paper_slug: string }
+        Returns: undefined
+      }
+      log_resume_download: {
+        Args: { p_country?: string; p_referrer?: string }
+        Returns: undefined
+      }
       moderate_comment: {
         Args: {
           comment_id: string

@@ -68,6 +68,11 @@ describe("anon read policies", () => {
     expect(error).not.toBeNull();
   });
 
+  it("denies anon access to resume download stats", async () => {
+    const { error } = await anon.from("resume_downloads").select("id");
+    expect(error).not.toBeNull();
+  });
+
   it("rejects anon writes", async () => {
     const { error } = await anon.from("posts").insert({ slug: "x", title: "x" });
     expect(error).not.toBeNull();
@@ -250,6 +255,63 @@ describe("security-definer counters (anon-callable)", () => {
       .eq("id", paperId)
       .single();
     expect(data!.download_count).toBeGreaterThan(downloadsBefore);
+  });
+
+  it("records request context on a paper download", async () => {
+    await anon.rpc("log_paper_download", {
+      paper_slug: "momentum-decay-crypto",
+      p_referrer: "https://news.ycombinator.com/",
+      p_country: "DE",
+    });
+    const { data } = await admin
+      .from("paper_downloads")
+      .select("referrer, country")
+      .eq("paper_id", paperId)
+      .order("downloaded_at", { ascending: false })
+      .limit(1)
+      .single();
+    expect(data).toMatchObject({
+      referrer: "https://news.ycombinator.com/",
+      country: "DE",
+    });
+  });
+
+  it("logs resume downloads", async () => {
+    const { count: before } = await admin
+      .from("resume_downloads")
+      .select("id", { count: "exact", head: true });
+
+    const { error } = await anon.rpc("log_resume_download", {
+      p_referrer: "http://localhost:3000/about",
+      p_country: "CA",
+    });
+    expect(error).toBeNull();
+
+    const { count: after } = await admin
+      .from("resume_downloads")
+      .select("id", { count: "exact", head: true });
+    expect(after).toBe((before ?? 0) + 1);
+  });
+});
+
+// The dashboard reads these tables under the admin's own cookie session, so
+// RLS — not just the /admin route guard — is what keeps download stats
+// private. Both layers are load-bearing; this covers the second one.
+describe("download stats are admin-only", () => {
+  it("returns nothing to a signed-in non-admin", async () => {
+    const [papers, resumes] = await Promise.all([
+      alice.from("paper_downloads").select("id"),
+      alice.from("resume_downloads").select("id"),
+    ]);
+    expect(papers.data).toEqual([]);
+    expect(resumes.data).toEqual([]);
+  });
+
+  it("returns rows to an admin", async () => {
+    // `bob` is promoted to admin earlier in this file.
+    const { data, error } = await bob.from("resume_downloads").select("id");
+    expect(error).toBeNull();
+    expect((data ?? []).length).toBeGreaterThan(0);
   });
 });
 
