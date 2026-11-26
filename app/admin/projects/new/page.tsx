@@ -19,6 +19,7 @@ export default async function NewProjectPage() {
         live_url: "",
         featured: false,
         sort_order: 0,
+        year: new Date().getFullYear(),
         status: "published",
       }}
     />

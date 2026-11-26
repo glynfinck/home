@@ -3,7 +3,6 @@ import { Suspense } from "react";
 
 import { CardGridSkeleton } from "@/components/site/loading-shell";
 import { ProjectCard } from "@/components/site/project-card";
-import { TypedTextInView } from "@/components/site/typed-text-in-view";
 import { getPublishedProjects } from "@/lib/data/projects";
 import { getTagIconMap } from "@/lib/data/tag-kinds";
 
@@ -15,12 +14,7 @@ export const metadata: Metadata = {
 export default function ProjectsPage() {
   return (
     <section className="mx-auto w-full max-w-5xl px-6 py-16">
-      <p className="font-mono text-xs tracking-widest text-brand uppercase">
-        <TypedTextInView text="Projects" />
-      </p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-        Selected work
-      </h1>
+      <h1 className="text-3xl font-semibold tracking-tight">Selected work</h1>
       <p className="mt-3 max-w-2xl text-muted-foreground">
         Systems, tools, and experiments — mostly around markets and data
         infrastructure.
@@ -33,6 +27,7 @@ export default function ProjectsPage() {
             command="ls projects/"
             cards={6}
             columns="sm:grid-cols-2 lg:grid-cols-3"
+            cover
           />
         }
       >

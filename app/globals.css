@@ -12,6 +12,7 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-geist-sans);
+  --font-serif: var(--font-newsreader), "Iowan Old Style", Georgia, serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -94,8 +95,8 @@
    * secondary encoding -- so any chart using all three MUST direct-label its
    * series, not rely on colour alone. */
   --series-1: oklch(0.596 0.145 163.2); /* emerald, matches --brand */
-  --series-2: oklch(0.646 0.152 70);    /* amber */
-  --series-3: oklch(0.585 0.18 275);    /* indigo */
+  --series-2: oklch(0.646 0.152 70); /* amber */
+  --series-3: oklch(0.585 0.18 275); /* indigo */
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.141 0.005 285.823);
@@ -184,12 +185,58 @@
     @apply rounded-md border border-border bg-muted px-1.5 py-0.5;
   }
 
+  /* Article headings are set in the serif (see `--font-serif`), which ties
+     them to the KaTeX math in the same column and makes a post read as a piece
+     of writing. Newsreader runs small and light next to Geist, so the sizes
+     step up and the weight comes down from the sans values to land at the
+     same visual size and colour. Body text stays in Geist. */
+  .prose-article :is(h2, h3, h4) {
+    position: relative;
+    font-family: var(--font-serif);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .prose-article h2 {
+    font-size: 1.7em;
+    line-height: 1.2;
+  }
+  .prose-article h3 {
+    font-size: 1.35em;
+    line-height: 1.3;
+  }
+  .prose-article h4 {
+    font-size: 1.15em;
+  }
+
   /* heading anchor links (rehype-autolink-headings). The anchor wraps the
      whole heading text, so without `font-weight: inherit` it picks up
      `prose-a:font-normal` and every article heading renders at 400. */
   .prose-article :is(h2, h3, h4) > a {
     @apply text-inherit no-underline hover:underline;
     font-weight: inherit;
+  }
+
+  /* A `#` in the gutter says the heading is a link target. Pointer devices
+     only: it is revealed on hover, and on touch the gutter is the page's own
+     24px padding with nothing to hover it with. */
+  .prose-article :is(h2, h3, h4) > a::before {
+    content: "#";
+    position: absolute;
+    right: 100%;
+    padding-right: 0.3em;
+    font-family: var(--font-mono);
+    font-size: 0.7em;
+    font-weight: 400;
+    line-height: inherit;
+    color: var(--brand);
+    opacity: 0;
+    transition: opacity 150ms;
+  }
+  @media (hover: hover) {
+    .prose-article :is(h2, h3, h4):hover > a::before,
+    .prose-article :is(h2, h3, h4) > a:focus-visible::before {
+      opacity: 1;
+    }
   }
 
   /* Jumping to a heading lands it at the viewport top, which the sticky
@@ -210,6 +257,55 @@
   }
   .prose-article > :last-child {
     margin-bottom: 0;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Article furniture
+ * ------------------------------------------------------------------------- */
+@layer components {
+  /* The title of a post or a paper. Serif, like the headings under it. */
+  .article-title {
+    font-family: var(--font-serif);
+    font-size: 2.25rem;
+    font-weight: 500;
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+  @media (width >= 40rem) {
+    .article-title {
+      font-size: 2.625rem;
+    }
+    /* Paper titles run to a sentence. At the post size they wrap to four
+       lines and start breaking at hyphens. */
+    .article-title[data-long] {
+      font-size: 2.125rem;
+      line-height: 1.12;
+    }
+  }
+
+  /* Figures number themselves, so prose can say "Fig. 2" and inserting a
+     figure renumbers the rest. Only `[data-figure]` counts: code blocks and
+     data tables are <figure>s too and are not figures. The reset shares a
+     declaration with the sidenote counter below on purpose: a second
+     `counter-reset` on the same element would replace the first, not add to
+     it. */
+  .prose-article {
+    counter-reset: sidenote figure;
+  }
+  .prose-article figure[data-figure] {
+    counter-increment: figure;
+  }
+  .figure-label::before {
+    content: "FIG. " counter(figure);
+    margin-right: 0.75em;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    color: var(--brand);
+    white-space: nowrap;
   }
 }
 
@@ -373,8 +469,7 @@
       typed-reveal var(--typed-duration) steps(var(--typed-chars, 1), end)
         var(--typed-delay, 150ms) backwards,
       typed-caret-off 10ms linear
-        calc(var(--typed-delay, 150ms) + var(--typed-duration) + 700ms)
-        forwards;
+        calc(var(--typed-delay, 150ms) + var(--typed-duration) + 700ms) forwards;
   }
 
   @keyframes typed-reveal {
@@ -436,10 +531,6 @@
  * renumbers everything after it.
  * ------------------------------------------------------------------------- */
 @layer components {
-  .prose-article {
-    counter-reset: sidenote;
-  }
-
   .sidenote-ref {
     counter-increment: sidenote;
     cursor: pointer;
@@ -697,7 +788,8 @@
     word-break: break-all;
   }
 
-  .prose-article :is(h2, h3, h4) > a::after {
+  .prose-article :is(h2, h3, h4) > a::after,
+  .prose-article :is(h2, h3, h4) > a::before {
     content: none;
   }
 

@@ -416,6 +416,7 @@ export type Database = {
           tech_stack: string[]
           title: string
           updated_at: string
+          year: number | null
         }
         Insert: {
           content?: string | null
@@ -433,6 +434,7 @@ export type Database = {
           tech_stack?: string[]
           title: string
           updated_at?: string
+          year?: number | null
         }
         Update: {
           content?: string | null
@@ -450,6 +452,7 @@ export type Database = {
           tech_stack?: string[]
           title?: string
           updated_at?: string
+          year?: number | null
         }
         Relationships: []
       }
@@ -459,6 +462,7 @@ export type Database = {
           content: string | null
           created_at: string
           download_count: number
+          highlights: Json
           id: string
           pdf_path: string
           pdf_size_bytes: number | null
@@ -474,6 +478,7 @@ export type Database = {
           content?: string | null
           created_at?: string
           download_count?: number
+          highlights?: Json
           id?: string
           pdf_path: string
           pdf_size_bytes?: number | null
@@ -489,6 +494,7 @@ export type Database = {
           content?: string | null
           created_at?: string
           download_count?: number
+          highlights?: Json
           id?: string
           pdf_path?: string
           pdf_size_bytes?: number | null

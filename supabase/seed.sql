@@ -36,6 +36,23 @@ insert into public.site_settings (key, value) values
       'headline', 'Software engineer, learning in the open.',
       'bio', 'I''m a software engineer sharing the tools I build and the experiments I''m working through, methods included.',
       'location', 'London, England',
+      'timezone', 'Europe/London',
+      -- The About page's `whoami` block and timeline. Drawn from the About
+      -- text below; the timeline's dates are as loose as that text is.
+      'facts', jsonb_build_array(
+        jsonb_build_object('key', 'name', 'value', 'Glyn Finck'),
+        jsonb_build_object('key', 'role', 'value', 'Systems developer, Connor Clark & Lunn Financial Group'),
+        jsonb_build_object('key', 'based', 'value', 'London, England'),
+        jsonb_build_object('key', 'from', 'value', 'Vancouver, Canada'),
+        jsonb_build_object('key', 'studied', 'value', 'Engineering Physics, UBC'),
+        jsonb_build_object('key', 'writes', 'value', 'quant research, failures included')
+      ),
+      'timeline', jsonb_build_array(
+        jsonb_build_object('when', '2022 to now', 'text', 'Connor Clark & Lunn, London. Market-data ETL, KDB and .NET data services, Prefect across teams.'),
+        jsonb_build_object('when', 'before', 'text', 'Engineering Physics at UBC, drifting steadily toward software.'),
+        jsonb_build_object('when', 'before that', 'text', 'University of Victoria, where an introductory C course stuck.'),
+        jsonb_build_object('when', 'start', 'text', 'Mathematics and science at Rockridge Secondary, Vancouver.')
+      ),
       'email', 'glynfinck@gmail.com',
       'resume_url', '',
       'about', E'I grew up in Vancouver, Canada, and I still spend as much time outdoors as London lets me.\n\nI got into mathematics and science at Rockridge Secondary, started at the University of Victoria, and an introductory C course turned out to be the thing that stuck. I transferred into Engineering Physics at UBC and drifted steadily toward software.\n\nSince 2022 I have been a systems developer at Connor Clark & Lunn Financial Group in London, building data infrastructure for investment management: high-volume ETL from market data vendors, KDB and .NET financial data services, and Python and Prefect adoption across teams. I built Prefectfg, an internal platform that turns open-source Prefect into a multi-tenant, self-hosted orchestration system.\n\nOutside work I write up the quantitative research I do on my own time, methods and failures included.'
@@ -491,6 +508,29 @@ on conflict (slug) do update set
   topics = excluded.topics,
   status = excluded.status,
   published_at = excluded.published_at;
+
+-- Headline numbers a paper leads with (research_papers.highlights). Every
+-- figure is one the paper and its post already state.
+update public.research_papers
+set highlights = jsonb_build_array(
+  jsonb_build_object('label', 'Pairs screened', 'value', '4,950', 'tone', 'neutral'),
+  jsonb_build_object('label', 'Round trips', 'value', '38,241', 'tone', 'neutral'),
+  jsonb_build_object('label', 'Break-even fee', 'value', '14.3 bps', 'tone', 'neutral'),
+  jsonb_build_object('label', 'Net at real fees', 'value', '-$1,496', 'tone', 'negative')
+)
+where slug = 'ou-pairs-limits-of-arbitrage';
+
+-- Project years (projects.year), shown on the cards. The two older ones are
+-- placeholders: set the real years in /admin/projects.
+update public.projects p
+set year = v.year
+from (values
+  ('glyn-dev', 2026),
+  ('graph-editor', 2026),
+  ('recycling-robot', 2019),
+  ('calvin', 2018)
+) as v(slug, year)
+where p.slug = v.slug;
 
 -- Post <-> paper links ---------------------------------------------------------
 insert into public.post_papers (post_id, paper_id)

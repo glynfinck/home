@@ -1,13 +1,17 @@
 import Link from "next/link";
 import { Download, FileText } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Chip } from "@/components/site/chip";
+import { Highlights } from "@/components/site/highlights";
 import { LinkPending } from "@/components/site/route-progress";
 import { formatDate } from "@/lib/format";
+import { parseHighlights } from "@/lib/highlights";
 import type { ResearchPaper } from "@/lib/data/research";
 
 export function ResearchCard({ paper }: { paper: ResearchPaper }) {
+  const highlights = parseHighlights(paper.highlights);
+
   return (
     <article className="group relative flex flex-col rounded-lg border border-border/60 bg-card/40 p-6 transition-colors duration-200 hover:border-border hover:bg-card">
       <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
@@ -30,19 +34,27 @@ export function ResearchCard({ paper }: { paper: ResearchPaper }) {
         </h3>
         <LinkPending />
       </Link>
-      <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
-        {paper.abstract}
-      </p>
+      {/* The numbers lead when the paper has them; the abstract shortens to
+          make room rather than the card growing. */}
+      {highlights.length > 0 ? (
+        <>
+          <Highlights items={highlights} className="mt-4" />
+          <p className="mt-4 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+            {paper.abstract}
+          </p>
+        </>
+      ) : (
+        <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
+          {paper.abstract}
+        </p>
+      )}
       {/* `mt-auto` pins the footer to the bottom of the card, and no wrapping
           between the two halves keeps the PDF button bottom-right however
-          many topics there are. It used to drop under the topics whenever
-          they ran to a second line. */}
+          many topics there are. */}
       <div className="mt-auto flex items-end justify-between gap-3 pt-4">
         <div className="flex min-w-0 flex-wrap gap-1.5">
           {paper.topics.map((topic) => (
-            <Badge key={topic} variant="outline" className="font-mono text-[11px]">
-              {topic}
-            </Badge>
+            <Chip key={topic}>{topic}</Chip>
           ))}
         </div>
         <Button

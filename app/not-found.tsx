@@ -24,7 +24,12 @@ export default async function RootNotFound() {
       <main className="flex-1">
         <NotFoundContent />
       </main>
-      <Footer name={profile.name} socialLinks={socialLinks} />
+      <Footer
+        name={profile.name}
+        socialLinks={socialLinks}
+        location={profile.location}
+        timezone={profile.timezone}
+      />
       <CommandPalette email={profile.email ?? undefined} />
     </>
   );

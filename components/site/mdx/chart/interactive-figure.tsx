@@ -46,6 +46,7 @@ export type InteractiveSeries = {
 };
 
 export function InteractiveFigure({
+  id,
   title,
   caption,
   source,
@@ -57,6 +58,7 @@ export function InteractiveFigure({
   series,
   winRate,
 }: {
+  id?: string;
   title: string;
   caption?: string;
   source?: string;
@@ -83,6 +85,7 @@ export function InteractiveFigure({
 
   return (
     <ChartFrame
+      id={id}
       title={title}
       caption={caption}
       source={source}

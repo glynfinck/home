@@ -1,9 +1,9 @@
-import { Badge } from "@/components/ui/badge";
+import { Chip } from "@/components/site/chip";
 
 /**
- * Tech-stack tag badge with an optional kind icon. Icons come
- * from the `tag_kinds` table, keyed by lowercased tag name — pass the whole
- * map and the badge resolves its own icon.
+ * Tech-stack chip with an optional kind icon. Icons come from the `tag_kinds`
+ * table, keyed by lowercased tag name — pass the whole map and the chip
+ * resolves its own icon.
  */
 export function StackBadge({
   tag,
@@ -15,7 +15,7 @@ export function StackBadge({
   const iconUrl = tagIcons?.[tag.toLowerCase()];
 
   return (
-    <Badge variant="outline" className="font-mono text-[11px]">
+    <Chip>
       {iconUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -27,6 +27,6 @@ export function StackBadge({
         />
       ) : null}
       {tag}
-    </Badge>
+    </Chip>
   );
 }

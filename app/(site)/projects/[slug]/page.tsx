@@ -1,9 +1,8 @@
 import "katex/dist/katex.min.css";
 
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowUpRight, Globe } from "lucide-react";
+import { ArrowUpRight, Globe } from "lucide-react";
 
 import { Suspense } from "react";
 
@@ -50,20 +49,10 @@ export default async function ProjectPage({ params }: Props) {
 
   return (
     <article className="mx-auto w-full max-w-5xl px-6 py-16">
-      <Link
-        href="/projects"
-        className="flex items-center gap-1 text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground"
-      >
-        <ArrowLeft className="size-3.5" /> Projects
-      </Link>
-
-      <header className="mt-6">
-        {/* A path, not an eyebrow label: no `tracking-widest`, which is for
-            the uppercase labels and spaces a lowercase path into dashes. */}
-        <p className="font-mono text-sm text-brand">
-          ~/projects/{project.slug}
-        </p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+      {/* The navbar's path (`glyn.dev/projects/slug`) replaces the back link
+          and the typed path that used to open this page. */}
+      <header>
+        <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
           {project.title}
         </h1>
         <p className="mt-3 max-w-2xl text-lg leading-relaxed text-muted-foreground">

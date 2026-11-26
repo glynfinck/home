@@ -3,12 +3,15 @@ import "katex/dist/katex.min.css";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Download } from "lucide-react";
+import { Download } from "lucide-react";
 
 import { Suspense } from "react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ArticleEnd } from "@/components/site/article-end";
+import { Chip } from "@/components/site/chip";
+import { CopyCitation } from "@/components/site/copy-citation";
+import { Highlights } from "@/components/site/highlights";
 import { ArticleBodySkeleton } from "@/components/site/loading-shell";
 import { ReadingProgress } from "@/components/site/reading-progress";
 import { Toc } from "@/components/site/toc";
@@ -17,7 +20,10 @@ import {
   getPostsForPaper,
   getPublishedPapers,
 } from "@/lib/data/research";
+import { bibtex } from "@/lib/citation";
+import { getProfileSettings, getSeoSettings } from "@/lib/data/settings";
 import { formatBytes, formatDate } from "@/lib/format";
+import { parseHighlights } from "@/lib/highlights";
 import { Mdx } from "@/lib/mdx";
 import { extractToc } from "@/lib/toc";
 
@@ -52,8 +58,20 @@ export default async function ResearchPaperPage({ params }: Props) {
   const paper = await getPaperBySlug(slug);
   if (!paper) notFound();
 
-  const posts = await getPostsForPaper(paper.id);
+  const [posts, profile, seo] = await Promise.all([
+    getPostsForPaper(paper.id),
+    getProfileSettings(),
+    getSeoSettings(),
+  ]);
   const toc = paper.content ? extractToc(paper.content) : [];
+  const highlights = parseHighlights(paper.highlights);
+  const citation = bibtex({
+    author: profile.name,
+    title: paper.title,
+    slug: paper.slug,
+    publishedAt: paper.published_at,
+    siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? seo.url,
+  });
 
   return (
     <>
@@ -66,14 +84,7 @@ export default async function ResearchPaperPage({ params }: Props) {
             <Toc entries={toc} variant="rail" />
           </div>
           <article className="min-w-0">
-            <Link
-              href="/research"
-              className="flex items-center gap-1 text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground print:hidden"
-            >
-              <ArrowLeft className="size-3.5" /> Research
-            </Link>
-
-            <header className="mt-6">
+            <header>
               <div className="flex flex-wrap items-center gap-3 font-mono text-xs text-muted-foreground">
                 <time dateTime={paper.published_at ?? undefined}>
                   {formatDate(paper.published_at)}
@@ -82,43 +93,54 @@ export default async function ResearchPaperPage({ params }: Props) {
                   <span>· {paper.download_count} downloads</span>
                 ) : null}
               </div>
-              <h1 className="mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+              <h1
+                className="article-title mt-3"
+                data-long={paper.title.length > 64 || undefined}
+              >
                 {paper.title}
               </h1>
               {paper.topics.length > 0 ? (
                 <div className="mt-4 flex flex-wrap gap-1.5">
                   {paper.topics.map((topic) => (
-                    <Badge
-                      key={topic}
-                      variant="outline"
-                      className="font-mono text-[11px]"
-                    >
-                      {topic}
-                    </Badge>
+                    <Chip key={topic}>{topic}</Chip>
                   ))}
                 </div>
               ) : null}
             </header>
 
-            <div className="mt-8 rounded-lg border bg-card/40 p-5">
+            {/* The result first: what the paper found, in numbers, before
+                the prose that explains it. */}
+            <Highlights items={highlights} size="page" className="mt-8" />
+
+            <div className="mt-6 rounded-lg border bg-card/40 p-5">
               <p className="font-mono text-xs tracking-widest text-brand uppercase">
                 Abstract
               </p>
               <p className="mt-3 leading-relaxed text-muted-foreground">
                 {paper.abstract}
               </p>
-              <div className="mt-5 flex items-center gap-3">
+              <div className="mt-5 flex flex-wrap items-center gap-3">
                 <Button asChild>
                   <a href={`/api/download/${paper.slug}`}>
                     <Download className="size-4" /> Download PDF
                   </a>
                 </Button>
+                <CopyCitation citation={citation} />
                 {paper.pdf_size_bytes ? (
                   <span className="font-mono text-xs text-muted-foreground">
                     {formatBytes(paper.pdf_size_bytes)}
                   </span>
                 ) : null}
               </div>
+              <details className="group mt-4">
+                <summary className="cursor-pointer list-none font-mono text-xs text-muted-foreground transition-colors duration-150 hover:text-foreground [&::-webkit-details-marker]:hidden">
+                  <span className="group-open:hidden">Show BibTeX</span>
+                  <span className="hidden group-open:inline">Hide BibTeX</span>
+                </summary>
+                <pre className="mt-3 overflow-x-auto rounded-md border border-border/60 bg-background p-3 font-mono text-xs leading-relaxed text-muted-foreground">
+                  {citation}
+                </pre>
+              </details>
             </div>
 
             {paper.content ? (
@@ -131,6 +153,7 @@ export default async function ResearchPaperPage({ params }: Props) {
                     compile MDX and render any figures in it. */}
                 <Suspense fallback={<ArticleBodySkeleton />}>
                   <Mdx source={paper.content} />
+                  <ArticleEnd />
                 </Suspense>
               </div>
             ) : null}

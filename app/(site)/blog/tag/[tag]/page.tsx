@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 
-import { PostRow } from "@/components/site/post-card";
-import { getAllTags, getPostsByTag } from "@/lib/data/posts";
+import { PostLog } from "@/components/site/post-log";
+import { TagFilter } from "@/components/site/tag-filter";
+import { getAllTags, getPostsByTag, getPublishedPosts } from "@/lib/data/posts";
 
 type Props = { params: Promise<{ tag: string }> };
 
@@ -30,29 +29,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function TagPage({ params }: Props) {
   const { tag } = await params;
   const decoded = decodeURIComponent(tag);
-  const posts = await getPostsByTag(decoded);
+  const [posts, tags, all] = await Promise.all([
+    getPostsByTag(decoded),
+    getAllTags(),
+    getPublishedPosts(),
+  ]);
 
   if (posts.length === 0) notFound();
 
   return (
-    <section className="mx-auto w-full max-w-3xl px-6 py-16">
-      <Link
-        href="/blog"
-        className="flex items-center gap-1 text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground"
-      >
-        <ArrowLeft className="size-3.5" /> Blog
-      </Link>
-      <h1 className="mt-4 text-3xl font-semibold tracking-tight">
-        <span className="text-brand">#</span>
-        {decoded}
-      </h1>
-      <p className="mt-2 text-muted-foreground">
-        {posts.length} {posts.length === 1 ? "post" : "posts"}
-      </p>
-      <div className="mt-6 divide-y divide-border/60 border-t border-border/60">
-        {posts.map((post) => (
-          <PostRow key={post.id} post={post} />
-        ))}
+    <section className="mx-auto w-full max-w-5xl px-6 py-16">
+      <div className="max-w-3xl">
+        <h1 className="text-3xl font-semibold tracking-tight">
+          <span className="text-brand">#</span>
+          {decoded}
+        </h1>
+        <p className="mt-3 text-muted-foreground">
+          {posts.length} {posts.length === 1 ? "post" : "posts"}
+        </p>
+        <div className="mt-6">
+          <TagFilter tags={tags} total={all.length} active={decoded} />
+        </div>
+        <PostLog posts={posts} className="mt-10" />
       </div>
     </section>
   );

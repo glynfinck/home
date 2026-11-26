@@ -21,10 +21,37 @@ import { MdxField } from "@/components/admin/mdx-field";
 import { ResumeUploadField } from "@/components/admin/upload-fields";
 import { saveSettings } from "@/lib/actions/admin";
 import type {
+  ProfileFact,
   ProfileSettings,
   SeoSettings,
   SocialLink,
+  TimelineEntry,
 } from "@/lib/settings";
+
+/**
+ * The About page's facts and timeline are edited as plain lines, one entry
+ * each, with a separator between the two parts. Lines without one are ignored
+ * rather than rejected, so a half-typed line never blocks a save.
+ */
+function toLines<T>(items: T[], format: (item: T) => string): string {
+  return items.map(format).join("\n");
+}
+function fromLines<T>(
+  text: string,
+  separator: string,
+  build: (left: string, right: string) => T,
+): T[] {
+  return text
+    .split("\n")
+    .map((line) => {
+      const at = line.indexOf(separator);
+      if (at < 1) return null;
+      const left = line.slice(0, at).trim();
+      const right = line.slice(at + separator.length).trim();
+      return left && right ? build(left, right) : null;
+    })
+    .filter((item): item is T => item !== null);
+}
 
 function useSave() {
   const router = useRouter();
@@ -47,10 +74,37 @@ function useSave() {
 
 export function ProfileSettingsForm({ initial }: { initial: ProfileSettings }) {
   const [values, setValues] = React.useState(initial);
+  const [factsText, setFactsText] = React.useState(() =>
+    toLines(initial.facts, (f) => `${f.key}: ${f.value}`),
+  );
+  const [timelineText, setTimelineText] = React.useState(() =>
+    toLines(initial.timeline, (t) => `${t.when} | ${t.text}`),
+  );
   const { pending, save } = useSave();
 
-  function set<K extends keyof ProfileSettings>(key: K, value: string) {
+  type TextKey = {
+    [K in keyof ProfileSettings]: ProfileSettings[K] extends string ? K : never;
+  }[keyof ProfileSettings];
+
+  function set(key: TextKey, value: string) {
     setValues((v) => ({ ...v, [key]: value }));
+  }
+
+  function saveProfile() {
+    save({
+      key: "profile",
+      value: {
+        ...values,
+        facts: fromLines<ProfileFact>(factsText, ":", (key, value) => ({
+          key,
+          value,
+        })),
+        timeline: fromLines<TimelineEntry>(timelineText, "|", (when, text) => ({
+          when,
+          text,
+        })),
+      },
+    });
   }
 
   return (
@@ -63,7 +117,10 @@ export function ProfileSettingsForm({ initial }: { initial: ProfileSettings }) {
         <div className="grid gap-2 sm:grid-cols-2 sm:gap-4">
           <div className="grid gap-2">
             <Label>Name</Label>
-            <Input value={values.name} onChange={(e) => set("name", e.target.value)} />
+            <Input
+              value={values.name}
+              onChange={(e) => set("name", e.target.value)}
+            />
           </div>
           <div className="grid gap-2">
             <Label>Location</Label>
@@ -72,6 +129,20 @@ export function ProfileSettingsForm({ initial }: { initial: ProfileSettings }) {
               onChange={(e) => set("location", e.target.value)}
             />
           </div>
+        </div>
+        <div className="grid gap-2">
+          <Label>
+            Time zone{" "}
+            <span className="font-normal text-muted-foreground">
+              (IANA name, for the footer clock; empty hides it)
+            </span>
+          </Label>
+          <Input
+            value={values.timezone}
+            onChange={(e) => set("timezone", e.target.value)}
+            placeholder="Europe/London"
+            className="font-mono text-sm"
+          />
         </div>
         <div className="grid gap-2">
           <Label>Headline</Label>
@@ -104,6 +175,40 @@ export function ProfileSettingsForm({ initial }: { initial: ProfileSettings }) {
           rows={12}
           placeholder={"## Optional heading\n\nYour story in MDX…"}
         />
+        <div className="grid gap-2 sm:grid-cols-2 sm:gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="facts">
+              About facts{" "}
+              <span className="font-normal text-muted-foreground">
+                (one per line, <span className="font-mono">key: value</span>)
+              </span>
+            </Label>
+            <Textarea
+              id="facts"
+              value={factsText}
+              onChange={(e) => setFactsText(e.target.value)}
+              rows={6}
+              className="font-mono text-sm"
+              placeholder={"role: Systems developer\nbased: London, England"}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="timeline">
+              About timeline{" "}
+              <span className="font-normal text-muted-foreground">
+                (newest first, <span className="font-mono">when | what</span>)
+              </span>
+            </Label>
+            <Textarea
+              id="timeline"
+              value={timelineText}
+              onChange={(e) => setTimelineText(e.target.value)}
+              rows={6}
+              className="font-mono text-sm"
+              placeholder={"2022 to now | Connor Clark & Lunn, London"}
+            />
+          </div>
+        </div>
         <div className="grid gap-2">
           <Label>Email</Label>
           <Input
@@ -125,11 +230,7 @@ export function ProfileSettingsForm({ initial }: { initial: ProfileSettings }) {
           />
         </div>
         <div>
-          <Button
-            size="sm"
-            disabled={pending}
-            onClick={() => save({ key: "profile", value: values })}
-          >
+          <Button size="sm" disabled={pending} onClick={saveProfile}>
             {pending ? <Spinner /> : null} Save profile
           </Button>
         </div>
@@ -205,7 +306,10 @@ export function SocialLinksForm({ initial }: { initial: SocialLink[] }) {
             variant="outline"
             size="sm"
             onClick={() =>
-              setLinks((all) => [...all, { label: "", url: "", icon: undefined }])
+              setLinks((all) => [
+                ...all,
+                { label: "", url: "", icon: undefined },
+              ])
             }
           >
             <Plus className="size-4" /> Add link

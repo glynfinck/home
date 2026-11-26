@@ -18,6 +18,7 @@ import { formatCell } from "@/lib/charts/format";
  * first paint, and when printing.
  */
 export function ChartFigure({
+  id,
   title,
   caption,
   source,
@@ -30,6 +31,7 @@ export function ChartFigure({
   readout,
   legend,
 }: {
+  id?: string;
   title: string;
   caption?: string;
   source?: string;
@@ -47,6 +49,7 @@ export function ChartFigure({
 }) {
   return (
     <ChartFrame
+      id={id}
       title={title}
       caption={caption}
       source={source}

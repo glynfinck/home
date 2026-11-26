@@ -2,7 +2,8 @@ import Link from "next/link";
 import { ArrowRight, FileDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { PostRow } from "@/components/site/post-card";
+import { PostLog } from "@/components/site/post-log";
+import { OuPath } from "@/components/site/ou-path";
 import { ProjectCard } from "@/components/site/project-card";
 import { ResearchCard } from "@/components/site/research-card";
 import { SectionHeading } from "@/components/site/section-heading";
@@ -38,56 +39,58 @@ export default async function HomePage() {
     <>
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-border/60">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(color-mix(in_oklch,var(--border)_80%,transparent)_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_0%,black_10%,transparent_70%)]"
-        />
         <div className="relative mx-auto w-full max-w-5xl px-6 py-24 sm:py-32">
-          <p className="font-mono text-sm text-brand">
-            <TypedText text="~/glyn.dev" caret="blink" delayMs={250} />
-          </p>
-          <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
-            {profile.headline || `${profile.name}.`}
-          </h1>
-          {profile.bio ? (
-            <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-              {profile.bio}
+          <div className="relative z-10 lg:max-w-xl">
+            <p className="font-mono text-sm text-brand">
+              <TypedText text="~/glyn.dev" caret="blink" delayMs={250} />
             </p>
-          ) : null}
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Button asChild>
-              <Link href="/projects">
-                View projects <ArrowRight className="size-4" />
-              </Link>
-            </Button>
-            {profile.resume_url ? (
-              <Button asChild variant="outline">
-                {/* `/api/resume` logs the click, then redirects to the PDF.
+            <h1 className="mt-4 text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
+              {profile.headline || `${profile.name}.`}
+            </h1>
+            {profile.bio ? (
+              <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
+                {profile.bio}
+              </p>
+            ) : null}
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <Button asChild>
+                <Link href="/projects">
+                  View projects <ArrowRight className="size-4" />
+                </Link>
+              </Button>
+              {profile.resume_url ? (
+                <Button asChild variant="outline">
+                  {/* `/api/resume` logs the click, then redirects to the PDF.
                     Keep `referrerPolicy` default so the route can record
                     which page the download started from. */}
-                <a href="/api/resume" target="_blank" rel="noopener">
-                  <FileDown className="size-4" /> Resume
-                </a>
-              </Button>
-            ) : null}
-            <div className="ml-1 flex items-center gap-1">
-              {github ? (
-                <SocialIconLink href={github.url} label="GitHub">
-                  <GitHubIcon className="size-4" />
-                </SocialIconLink>
+                  <a href="/api/resume" target="_blank" rel="noopener">
+                    <FileDown className="size-4" /> Resume
+                  </a>
+                </Button>
               ) : null}
-              {linkedin ? (
-                <SocialIconLink href={linkedin.url} label="LinkedIn">
-                  <LinkedInIcon className="size-4" />
-                </SocialIconLink>
-              ) : null}
-              {x ? (
-                <SocialIconLink href={x.url} label="X">
-                  <XIcon className="size-4" />
-                </SocialIconLink>
-              ) : null}
+              <div className="ml-1 flex items-center gap-1">
+                {github ? (
+                  <SocialIconLink href={github.url} label="GitHub">
+                    <GitHubIcon className="size-4" />
+                  </SocialIconLink>
+                ) : null}
+                {linkedin ? (
+                  <SocialIconLink href={linkedin.url} label="LinkedIn">
+                    <LinkedInIcon className="size-4" />
+                  </SocialIconLink>
+                ) : null}
+                {x ? (
+                  <SocialIconLink href={x.url} label="X">
+                    <XIcon className="size-4" />
+                  </SocialIconLink>
+                ) : null}
+              </div>
             </div>
           </div>
+          {/* Beside the copy from lg, faded in from the left so it never sits
+              under the text; below the copy on narrower screens, where there
+              is no room beside it. */}
+          <OuPath className="mt-12 lg:absolute lg:inset-y-24 lg:right-6 lg:left-[56%] lg:mt-0 lg:[mask-image:linear-gradient(to_right,transparent,#000_35%,#000_94%,transparent)]" />
         </div>
       </section>
 
@@ -130,11 +133,7 @@ export default async function HomePage() {
               href="/blog"
               hrefLabel="All posts"
             />
-            <div className="mt-4 divide-y divide-border/60">
-              {posts.slice(0, 3).map((post) => (
-                <PostRow key={post.id} post={post} />
-              ))}
-            </div>
+            <PostLog posts={posts.slice(0, 3)} className="mt-8" />
           </div>
         </section>
       ) : null}

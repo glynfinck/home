@@ -1,6 +1,37 @@
+import { execSync } from "node:child_process";
+
 import type { NextConfig } from "next";
 
+/**
+ * What the footer's status line reports: the commit this build was made from
+ * and when. Resolved once, here, and inlined through `env`, so every page of a
+ * deployment agrees and nothing is read at request time.
+ *
+ * Vercel builds have no `.git` directory but do set the `VERCEL_GIT_*`
+ * variables; local and CI builds are the other way round.
+ */
+function git(args: string): string {
+  try {
+    return execSync(`git ${args}`, { stdio: ["ignore", "pipe", "ignore"] })
+      .toString()
+      .trim();
+  } catch {
+    return "";
+  }
+}
+
+const BUILD_SHA = (
+  process.env.VERCEL_GIT_COMMIT_SHA || git("rev-parse HEAD")
+).slice(0, 7);
+const BUILD_REF =
+  process.env.VERCEL_GIT_COMMIT_REF || git("rev-parse --abbrev-ref HEAD");
+
 const nextConfig: NextConfig = {
+  env: {
+    BUILD_SHA,
+    BUILD_REF,
+    BUILD_TIME: new Date().toISOString(),
+  },
   images: {
     remotePatterns: [
       // Local Supabase Storage (media bucket)

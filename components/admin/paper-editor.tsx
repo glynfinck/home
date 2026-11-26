@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { Plus, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ import {
   type PaperInput,
 } from "@/lib/actions/admin";
 import { slugify } from "@/lib/format";
+import { MAX_HIGHLIGHTS, type Highlight } from "@/lib/highlights";
 
 type PaperFormValues = Omit<PaperInput, "id"> & { id?: string };
 
@@ -163,6 +165,11 @@ export function PaperEditor({
           />
         </div>
 
+        <HighlightsField
+          value={values.highlights}
+          onChange={(highlights) => set("highlights", highlights)}
+        />
+
         <MdxField
           id="content"
           label={
@@ -177,6 +184,85 @@ export function PaperEditor({
           onChange={(content) => set("content", content)}
         />
       </div>
+    </div>
+  );
+}
+
+/**
+ * The paper's headline numbers: label, the figure as it should read, and
+ * whether it is the one that went against the hypothesis (drawn in amber).
+ */
+function HighlightsField({
+  value,
+  onChange,
+}: {
+  value: Highlight[];
+  onChange: (value: Highlight[]) => void;
+}) {
+  function update(index: number, patch: Partial<Highlight>) {
+    onChange(value.map((h, i) => (i === index ? { ...h, ...patch } : h)));
+  }
+
+  return (
+    <div className="grid gap-2">
+      <Label>
+        Headline numbers{" "}
+        <span className="font-normal text-muted-foreground">
+          (up to {MAX_HIGHLIGHTS}, shown on the card and above the abstract)
+        </span>
+      </Label>
+      {value.map((highlight, i) => (
+        <div key={i} className="flex flex-wrap items-center gap-2">
+          <Input
+            value={highlight.label}
+            placeholder="Break-even fee"
+            className="w-full sm:flex-1"
+            onChange={(e) => update(i, { label: e.target.value })}
+          />
+          <Input
+            value={highlight.value}
+            placeholder="14.3 bps"
+            className="flex-1 font-mono sm:w-32 sm:flex-none"
+            onChange={(e) => update(i, { value: e.target.value })}
+          />
+          <Select
+            value={highlight.tone}
+            onValueChange={(tone) =>
+              update(i, { tone: tone as Highlight["tone"] })
+            }
+          >
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="neutral">Neutral</SelectItem>
+              <SelectItem value="negative">Negative</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label="Remove number"
+            className="shrink-0"
+            onClick={() => onChange(value.filter((_, j) => j !== i))}
+          >
+            <X className="size-4" />
+          </Button>
+        </div>
+      ))}
+      {value.length < MAX_HIGHLIGHTS ? (
+        <div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              onChange([...value, { label: "", value: "", tone: "neutral" }])
+            }
+          >
+            <Plus className="size-4" /> Add number
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }

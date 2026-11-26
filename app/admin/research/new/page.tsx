@@ -15,6 +15,7 @@ export default async function NewPaperPage() {
         pdf_path: "",
         pdf_size_bytes: null,
         topics: [],
+        highlights: [],
         status: "draft",
         published_at: null,
       }}
