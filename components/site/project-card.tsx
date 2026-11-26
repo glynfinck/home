@@ -16,13 +16,19 @@ export function ProjectCard({
   return (
     <article className="group relative flex flex-col rounded-lg border border-border/60 bg-card/40 p-6 transition-colors duration-200 hover:border-border hover:bg-card">
       <div className="flex items-start justify-between gap-3">
-        <Link href={`/projects/${project.slug}`}>
+        {/* The whole card lights up on hover, so the whole card has to be the
+            link: `after:inset-0` stretches the title's hit area over it. The
+            GitHub and live links sit above that layer (`relative z-10`). */}
+        <Link
+          href={`/projects/${project.slug}`}
+          className="rounded-sm outline-none after:absolute after:inset-0 after:rounded-lg focus-visible:after:ring-2 focus-visible:after:ring-ring"
+        >
           <h3 className="font-medium tracking-tight transition-colors duration-150 group-hover:text-brand">
             {project.title}
           </h3>
           <LinkPending />
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="relative z-10 flex items-center gap-2">
           {project.github_url ? (
             <a
               href={project.github_url}

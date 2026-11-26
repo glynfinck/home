@@ -158,9 +158,11 @@ export default async function BlogPostPage({ params }: Props) {
                       <div className="min-w-0">
                         <Link
                           href={`/research/${paper.slug}`}
-                          className="flex items-center gap-2 font-medium tracking-tight transition-colors duration-150 hover:text-brand"
+                          className="flex items-start gap-2 font-medium tracking-tight transition-colors duration-150 hover:text-brand"
                         >
-                          <FileText className="size-4 shrink-0 text-brand" />
+                          {/* Aligned to the first line, not the middle of a
+                              title that wraps. */}
+                          <FileText className="mt-1 size-4 shrink-0 text-brand" />
                           {paper.title}
                         </Link>
                         <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">

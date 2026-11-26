@@ -17,6 +17,7 @@ import { getPublishedPosts } from "@/lib/data/posts";
 import { getPublishedPapers } from "@/lib/data/research";
 import { getProfileSettings, getSocialLinks } from "@/lib/data/settings";
 import { getTagIconMap } from "@/lib/data/tag-kinds";
+import { cn } from "@/lib/utils";
 
 export default async function HomePage() {
   const [profile, socialLinks, projects, posts, papers, tagIcons] =
@@ -99,7 +100,15 @@ export default async function HomePage() {
             href="/projects"
             hrefLabel="All projects"
           />
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Three columns only when there are three cards to fill them: two
+              featured projects in a three-column grid leave a hole on the
+              right that reads as a missing card. */}
+          <div
+            className={cn(
+              "mt-8 grid gap-4 sm:grid-cols-2",
+              projects.length >= 3 && "lg:grid-cols-3",
+            )}
+          >
             {projects.map((project) => (
               <ProjectCard
                 key={project.id}

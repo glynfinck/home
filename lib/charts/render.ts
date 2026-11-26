@@ -200,7 +200,7 @@ export function prepareSpec(
       // the stored spec because the coordinates are breakpoint geometry.
       axisX: {
         titleX: inner.width / 2,
-        titleY: geometry.padding.bottom - 6,
+        titleY: geometry.padding.bottom - 2,
         titleAngle: 0,
         titleAlign: "center",
         titleBaseline: "bottom",

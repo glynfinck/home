@@ -68,7 +68,7 @@ export default async function ResearchPaperPage({ params }: Props) {
           <article className="min-w-0">
             <Link
               href="/research"
-              className="flex items-center gap-1 text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground"
+              className="flex items-center gap-1 text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground print:hidden"
             >
               <ArrowLeft className="size-3.5" /> Research
             </Link>

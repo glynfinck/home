@@ -3,7 +3,7 @@ import "katex/dist/katex.min.css";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowUpRight } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Globe } from "lucide-react";
 
 import { Suspense } from "react";
 
@@ -58,7 +58,9 @@ export default async function ProjectPage({ params }: Props) {
       </Link>
 
       <header className="mt-6">
-        <p className="font-mono text-xs tracking-widest text-brand">
+        {/* A path, not an eyebrow label: no `tracking-widest`, which is for
+            the uppercase labels and spaces a lowercase path into dashes. */}
+        <p className="font-mono text-sm text-brand">
           ~/projects/{project.slug}
         </p>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
@@ -109,7 +111,8 @@ export default async function ProjectPage({ params }: Props) {
                       rel="noreferrer"
                       className="flex items-center gap-2 text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground"
                     >
-                      <ArrowUpRight className="size-4" /> Live site
+                      <Globe className="size-4" /> Live site
+                      <ArrowUpRight className="size-3.5" />
                     </a>
                   ) : null}
                 </div>

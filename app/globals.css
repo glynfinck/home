@@ -184,9 +184,12 @@
     @apply rounded-md border border-border bg-muted px-1.5 py-0.5;
   }
 
-  /* heading anchor links (rehype-autolink-headings) */
+  /* heading anchor links (rehype-autolink-headings). The anchor wraps the
+     whole heading text, so without `font-weight: inherit` it picks up
+     `prose-a:font-normal` and every article heading renders at 400. */
   .prose-article :is(h2, h3, h4) > a {
     @apply text-inherit no-underline hover:underline;
+    font-weight: inherit;
   }
 
   /* Jumping to a heading lands it at the viewport top, which the sticky
@@ -605,9 +608,15 @@
     }
   }
 
-  /* A title bar sits where the button would; drop it below the tab. */
+  /* A title bar gives the button somewhere to sit that is not on top of the
+     code: on touch it is always visible, and below the tab it covered the end
+     of the first line. Centred in the tab's height (py-2 + a text-xs line). */
   [data-rehype-pretty-code-title] ~ .code-copy {
-    top: 2.85rem;
+    top: 0.1875rem;
+    right: 0.375rem;
+    border-color: transparent;
+    background: transparent;
+    backdrop-filter: none;
   }
 }
 

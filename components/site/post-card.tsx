@@ -7,9 +7,15 @@ import type { PostListItem } from "@/lib/data/posts";
 
 export function PostRow({ post }: { post: PostListItem }) {
   return (
-    <article className="group py-6">
+    <article className="group relative py-6">
       <div className="flex items-baseline justify-between gap-4">
-        <Link href={`/blog/${post.slug}`} className="min-w-0">
+        {/* Stretched over the row: the title already changes colour when any
+            part of the row is hovered, so any part of it should open the
+            post. Tag links sit above this layer. */}
+        <Link
+          href={`/blog/${post.slug}`}
+          className="min-w-0 outline-none after:absolute after:inset-0 focus-visible:after:rounded-md focus-visible:after:ring-2 focus-visible:after:ring-ring"
+        >
           <h3 className="font-medium tracking-tight transition-colors duration-150 group-hover:text-brand">
             {post.title}
           </h3>
@@ -29,7 +35,12 @@ export function PostRow({ post }: { post: PostListItem }) {
       ) : null}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {post.tags.map((tag) => (
-          <Badge key={tag} variant="secondary" asChild>
+          <Badge
+            key={tag}
+            variant="secondary"
+            asChild
+            className="relative z-10"
+          >
             <Link href={`/blog/tag/${encodeURIComponent(tag)}`}>{tag}</Link>
           </Badge>
         ))}

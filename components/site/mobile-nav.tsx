@@ -36,7 +36,10 @@ export function MobileNav({ items }: { items: NavItem[] }) {
             <Menu className="size-4" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="top" className="h-dvh w-full max-w-full">
+        <SheetContent
+          side="top"
+          className="w-full max-w-full data-[side=top]:h-dvh"
+        >
           <SheetHeader>
             <SheetTitle className="text-left font-mono text-sm font-medium">
               glyn<span className="text-brand">.dev</span>
