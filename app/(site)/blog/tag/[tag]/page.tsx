@@ -39,19 +39,17 @@ export default async function TagPage({ params }: Props) {
 
   return (
     <section className="mx-auto w-full max-w-5xl px-6 py-16">
-      <div className="max-w-3xl">
-        <h1 className="text-3xl font-semibold tracking-tight">
-          <span className="text-brand">#</span>
-          {decoded}
-        </h1>
-        <p className="mt-3 text-muted-foreground">
-          {posts.length} {posts.length === 1 ? "post" : "posts"}
-        </p>
-        <div className="mt-6">
-          <TagFilter tags={tags} total={all.length} active={decoded} />
-        </div>
-        <PostLog posts={posts} className="mt-10" />
+      <h1 className="text-3xl font-semibold tracking-tight">
+        <span className="text-brand">#</span>
+        {decoded}
+      </h1>
+      <p className="mt-3 text-muted-foreground">
+        {posts.length} {posts.length === 1 ? "post" : "posts"}
+      </p>
+      <div className="mt-6">
+        <TagFilter tags={tags} total={all.length} active={decoded} />
       </div>
+      <PostLog posts={posts} className="mt-10" />
     </section>
   );
 }
