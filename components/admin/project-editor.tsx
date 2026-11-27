@@ -33,9 +33,11 @@ type ProjectFormValues = Omit<ProjectInput, "id"> & { id?: string };
 export function ProjectEditor({
   initial,
   tagOptions,
+  topicOptions,
 }: {
   initial: ProjectFormValues;
   tagOptions: TagOption[];
+  topicOptions: TagOption[];
 }) {
   const router = useRouter();
   const [values, setValues] = React.useState(initial);
@@ -184,6 +186,16 @@ export function ProjectEditor({
             onChange={(tech) => set("tech_stack", tech)}
             options={tagOptions}
             placeholder="Search stack tags or type a new one"
+          />
+        </div>
+
+        <div className="grid gap-2">
+          <Label>Topics</Label>
+          <TagPicker
+            value={values.topics}
+            onChange={(topics) => set("topics", topics)}
+            options={topicOptions}
+            placeholder="Search topics or type a new one"
           />
         </div>
 

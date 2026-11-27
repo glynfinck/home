@@ -4,6 +4,7 @@ import { supabasePublic } from "@/lib/supabase/public";
 import { safeRead } from "@/lib/data/util";
 import type { Tables } from "@/types/helpers";
 import { CACHE_TAGS } from "@/lib/data/settings";
+import { tagKey } from "@/lib/tag-icons";
 
 export type TagKind = Tables<"tag_kinds">;
 
@@ -25,12 +26,13 @@ export const getTagKinds = (): Promise<TagKind[]> =>
   safeRead("tag_kinds", getTagKindsCached, []);
 
 /**
- * Lowercased kind name → icon URL. Tags match kinds case-insensitively, so
- * look up with `tag.toLowerCase()`.
+ * Kind name, folded by `tagKey` → icon URL. Look tags up through
+ * `resolveTagIcon`, which folds them the same way, so "C++" finds the
+ * "cplusplus" kind and "Next.js" finds "nextjs".
  */
 export async function getTagIconMap(): Promise<Record<string, string>> {
   const kinds = await getTagKinds();
   return Object.fromEntries(
-    kinds.map((kind) => [kind.name.toLowerCase(), kind.icon_url]),
+    kinds.map((kind) => [tagKey(kind.name), kind.icon_url]),
   );
 }

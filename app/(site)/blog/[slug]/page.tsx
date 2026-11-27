@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArticleEnd } from "@/components/site/article-end";
 import { Chip } from "@/components/site/chip";
+import { TagIcon } from "@/components/site/tag-icon";
+import { TagRow } from "@/components/site/tag-row";
 import { ArticleBodySkeleton } from "@/components/site/loading-shell";
 import { Comments } from "@/components/site/comments/comments";
 import { PostLog } from "@/components/site/post-log";
@@ -24,6 +26,7 @@ import {
   getRelatedPosts,
 } from "@/lib/data/posts";
 import { formatDate } from "@/lib/format";
+import { getTagIconMap } from "@/lib/data/tag-kinds";
 import { Mdx } from "@/lib/mdx";
 import { extractToc } from "@/lib/toc";
 
@@ -74,9 +77,10 @@ export default async function BlogPostPage({ params }: Props) {
   const post = await getPostBySlug(slug);
   if (!post) notFound();
 
-  const [papers, related] = await Promise.all([
+  const [papers, related, tagIcons] = await Promise.all([
     getPapersForPost(post.id),
     getRelatedPosts(post.slug),
+    getTagIconMap(),
   ]);
   const toc = extractToc(post.content);
 
@@ -116,16 +120,33 @@ export default async function BlogPostPage({ params }: Props) {
                   {post.excerpt}
                 </p>
               ) : null}
-              {post.tags.length > 0 ? (
-                <div className="mt-5 flex flex-wrap gap-1.5">
-                  {post.tags.map((tag) => (
-                    <Chip
-                      key={tag}
-                      href={`/blog/tag/${encodeURIComponent(tag)}`}
-                    >
-                      {tag}
-                    </Chip>
-                  ))}
+              {post.tags.length + post.tech_stack.length > 0 ? (
+                <div className="mt-5 space-y-2">
+                  {post.tags.length > 0 ? (
+                    <TagRow label="topics">
+                      {post.tags.map((tag) => (
+                        <Chip
+                          key={tag}
+                          href={`/blog/tag/${encodeURIComponent(tag)}`}
+                        >
+                          {tag}
+                        </Chip>
+                      ))}
+                    </TagRow>
+                  ) : null}
+                  {post.tech_stack.length > 0 ? (
+                    <TagRow label="stack">
+                      {post.tech_stack.map((tag) => (
+                        <Chip
+                          key={tag}
+                          href={`/blog/tag/${encodeURIComponent(tag)}`}
+                        >
+                          <TagIcon tag={tag} uploaded={tagIcons} />
+                          {tag}
+                        </Chip>
+                      ))}
+                    </TagRow>
+                  ) : null}
                 </div>
               ) : null}
             </header>

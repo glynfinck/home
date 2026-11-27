@@ -42,7 +42,7 @@ const getSearchIndexCached = unstable_cache(
         title: post.title,
         subtitle: post.excerpt ?? undefined,
         href: `/blog/${post.slug}`,
-        keywords: [post.slug, ...post.tags],
+        keywords: [post.slug, ...post.tags, ...post.tech_stack],
       })),
       ...papers.map((paper) => ({
         id: `paper:${paper.slug}`,
@@ -58,7 +58,7 @@ const getSearchIndexCached = unstable_cache(
         title: project.title,
         subtitle: project.summary ?? undefined,
         href: `/projects/${project.slug}`,
-        keywords: [project.slug, ...project.tech_stack],
+        keywords: [project.slug, ...project.tech_stack, ...project.topics],
       })),
       ...tags.map(({ tag, count }) => ({
         id: `tag:${tag}`,

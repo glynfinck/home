@@ -2,9 +2,10 @@ import { PostEditor } from "@/components/admin/post-editor";
 import { adminListPapers, adminTagOptions } from "@/lib/data/admin";
 
 export default async function NewPostPage() {
-  const [papers, tagOptions] = await Promise.all([
+  const [papers, tagOptions, stackOptions] = await Promise.all([
     adminListPapers(),
-    adminTagOptions("tags"),
+    adminTagOptions("topics"),
+    adminTagOptions("stack"),
   ]);
 
   return (
@@ -16,12 +17,14 @@ export default async function NewPostPage() {
         content: "",
         cover_image_url: "",
         tags: [],
+        tech_stack: [],
         status: "draft",
         published_at: null,
         paperIds: [],
       }}
       papers={papers.map((p) => ({ id: p.id, title: p.title }))}
       tagOptions={tagOptions}
+      stackOptions={stackOptions}
     />
   );
 }

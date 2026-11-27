@@ -4,7 +4,9 @@ import { ArrowUpRight } from "lucide-react";
 import { GitHubIcon } from "@/components/site/social-icons";
 import { LinkPending } from "@/components/site/route-progress";
 import { ProjectCover } from "@/components/site/project-cover";
+import { Chip } from "@/components/site/chip";
 import { StackBadge } from "@/components/site/stack-badge";
+import { TagRow } from "@/components/site/tag-row";
 import type { Project } from "@/lib/data/projects";
 
 export function ProjectCard({
@@ -69,11 +71,24 @@ export function ProjectCard({
         <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
           {project.summary}
         </p>
-        <div className="mt-4 flex flex-wrap gap-1.5">
-          {project.tech_stack.map((tech) => (
-            <StackBadge key={tech} tag={tech} tagIcons={tagIcons} />
-          ))}
-        </div>
+        {project.tech_stack.length + project.topics.length > 0 ? (
+          <div className="mt-4 space-y-2">
+            {project.topics.length > 0 ? (
+              <TagRow label="topics">
+                {project.topics.map((topic) => (
+                  <Chip key={topic}>{topic}</Chip>
+                ))}
+              </TagRow>
+            ) : null}
+            {project.tech_stack.length > 0 ? (
+              <TagRow label="stack">
+                {project.tech_stack.map((tech) => (
+                  <StackBadge key={tech} tag={tech} tagIcons={tagIcons} />
+                ))}
+              </TagRow>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </article>
   );
