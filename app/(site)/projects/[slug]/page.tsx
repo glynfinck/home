@@ -9,6 +9,7 @@ import { Suspense } from "react";
 import { ArticleBodySkeleton } from "@/components/site/loading-shell";
 import { ProjectCover } from "@/components/site/project-cover";
 import { GitHubIcon } from "@/components/site/social-icons";
+import { Chip } from "@/components/site/chip";
 import { StackBadge } from "@/components/site/stack-badge";
 import { getProjectBySlug, getPublishedProjects } from "@/lib/data/projects";
 import { getTagIconMap } from "@/lib/data/tag-kinds";
@@ -93,6 +94,19 @@ export default async function ProjectPage({ params }: Props) {
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {project.tech_stack.map((tech) => (
                     <StackBadge key={tech} tag={tech} tagIcons={tagIcons} />
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {project.topics.length > 0 ? (
+              <div>
+                <p className="font-mono text-xs tracking-widest text-muted-foreground uppercase">
+                  Topics
+                </p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {project.topics.map((topic) => (
+                    <Chip key={topic}>{topic}</Chip>
                   ))}
                 </div>
               </div>

@@ -339,6 +339,7 @@ export type Database = {
           slug: string
           status: Database["public"]["Enums"]["content_status"]
           tags: string[]
+          tech_stack: string[]
           title: string
           updated_at: string
           view_count: number
@@ -354,6 +355,7 @@ export type Database = {
           slug: string
           status?: Database["public"]["Enums"]["content_status"]
           tags?: string[]
+          tech_stack?: string[]
           title: string
           updated_at?: string
           view_count?: number
@@ -369,6 +371,7 @@ export type Database = {
           slug?: string
           status?: Database["public"]["Enums"]["content_status"]
           tags?: string[]
+          tech_stack?: string[]
           title?: string
           updated_at?: string
           view_count?: number
@@ -415,6 +418,7 @@ export type Database = {
           status: Database["public"]["Enums"]["content_status"]
           summary: string
           tech_stack: string[]
+          topics: string[]
           title: string
           updated_at: string
           year: number | null
@@ -434,6 +438,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["content_status"]
           summary: string
           tech_stack?: string[]
+          topics?: string[]
           title: string
           updated_at?: string
           year?: number | null
@@ -453,6 +458,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["content_status"]
           summary?: string
           tech_stack?: string[]
+          topics?: string[]
           title?: string
           updated_at?: string
           year?: number | null

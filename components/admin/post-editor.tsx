@@ -40,6 +40,7 @@ type PostFormValues = {
   content: string;
   cover_image_url: string;
   tags: string[];
+  tech_stack: string[];
   status: "draft" | "published" | "archived";
   published_at: string | null;
   paperIds: string[];
@@ -49,10 +50,12 @@ export function PostEditor({
   initial,
   papers,
   tagOptions,
+  stackOptions,
 }: {
   initial: PostFormValues;
   papers: PaperOption[];
   tagOptions: TagOption[];
+  stackOptions: TagOption[];
 }) {
   const router = useRouter();
   const [values, setValues] = React.useState<PostFormValues>(initial);
@@ -138,7 +141,9 @@ export function PostEditor({
             <Label>Status</Label>
             <Select
               value={values.status}
-              onValueChange={(v) => set("status", v as PostFormValues["status"])}
+              onValueChange={(v) =>
+                set("status", v as PostFormValues["status"])
+              }
             >
               <SelectTrigger>
                 <SelectValue />
@@ -173,11 +178,22 @@ export function PostEditor({
         </div>
 
         <div className="grid gap-2">
-          <Label>Tags</Label>
+          <Label>Topics</Label>
           <TagPicker
             value={values.tags}
             onChange={(tags) => set("tags", tags)}
             options={tagOptions}
+            placeholder="Search topics or type a new one"
+          />
+        </div>
+
+        <div className="grid gap-2">
+          <Label>Technologies</Label>
+          <TagPicker
+            value={values.tech_stack}
+            onChange={(tech) => set("tech_stack", tech)}
+            options={stackOptions}
+            placeholder="Search technologies or type a new one"
           />
         </div>
 
@@ -203,7 +219,10 @@ export function PostEditor({
             <Label>Referenced research</Label>
             <div className="space-y-2 rounded-lg border p-4">
               {papers.map((paper) => (
-                <label key={paper.id} className="flex items-center gap-2.5 text-sm">
+                <label
+                  key={paper.id}
+                  className="flex items-center gap-2.5 text-sm"
+                >
                   <Checkbox
                     checked={values.paperIds.includes(paper.id)}
                     onCheckedChange={(checked) =>

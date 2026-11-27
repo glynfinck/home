@@ -4,6 +4,7 @@ import { unstable_noStore } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
 import type { Tables } from "@/types/helpers";
+import { resolveTagIcon, tagKey } from "@/lib/tag-icons";
 
 /**
  * Admin reads — always fresh, always under the admin's cookie session
@@ -72,61 +73,79 @@ export async function adminListTagKinds() {
   return data;
 }
 
-export type TagField = "tech_stack" | "tags" | "topics";
+/** Tag columns, by table. Topics and technologies are separate kinds of tag. */
+const TAG_COLUMNS = {
+  stack: [
+    ["projects", "tech_stack"],
+    ["posts", "tech_stack"],
+  ],
+  topics: [
+    ["posts", "tags"],
+    ["projects", "topics"],
+    ["research_papers", "topics"],
+  ],
+} as const;
+
+export type TagKind = keyof typeof TAG_COLUMNS;
 
 async function tagsInUse(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  field: TagField,
+  kind: TagKind,
 ): Promise<string[]> {
-  const query =
-    field === "tech_stack"
-      ? supabase.from("projects").select("tech_stack")
-      : field === "tags"
-        ? supabase.from("posts").select("tags")
-        : supabase.from("research_papers").select("topics");
-  const { data, error } = await query;
-  if (error) throw error;
-  return (data as Record<TagField, string[]>[]).flatMap(
-    (row) => row[field] ?? [],
+  const perColumn = await Promise.all(
+    TAG_COLUMNS[kind].map(async ([table, column]) => {
+      const { data, error } = await supabase.from(table).select(column);
+      if (error) throw error;
+      return (data as unknown as Record<string, string[] | null>[]).flatMap(
+        (row) => row[column] ?? [],
+      );
+    }),
   );
+  return perColumn.flat();
 }
 
 export type AdminTagOption = { name: string; iconUrl: string | null };
 
 /**
- * Tag picker options for an editor field: every tag in use for that field
- * plus every kind name, lowercased and sorted, with kind icons attached.
+ * Tag picker options, lowercased and sorted. Topics: every topic in use on
+ * posts, projects and papers. Stack: every technology in use plus every kind
+ * name, with its logo (uploaded kind, else the built-in one).
  */
 export async function adminTagOptions(
-  field: TagField,
+  kind: TagKind,
 ): Promise<AdminTagOption[]> {
   unstable_noStore();
   const supabase = await createClient();
-  const [used, { data: kinds, error }] = await Promise.all([
-    tagsInUse(supabase, field),
-    supabase.from("tag_kinds").select("name, icon_url"),
-  ]);
-  if (error) throw error;
-
-  const icons = new Map(
-    kinds.map((kind) => [kind.name.toLowerCase(), kind.icon_url]),
+  const used = (await tagsInUse(supabase, kind)).map((tag) =>
+    tag.toLowerCase(),
   );
-  const names = new Set([...used.map((tag) => tag.toLowerCase()), ...icons.keys()]);
-  return [...names]
-    .sort()
-    .map((name) => ({ name, iconUrl: icons.get(name) ?? null }));
+  if (kind === "topics") {
+    return [...new Set(used)].sort().map((name) => ({ name, iconUrl: null }));
+  }
+
+  const { data: kinds, error } = await supabase
+    .from("tag_kinds")
+    .select("name, icon_url");
+  if (error) throw error;
+  const uploaded = Object.fromEntries(
+    kinds.map((k) => [tagKey(k.name), k.icon_url]),
+  );
+  const names = new Set([...used, ...kinds.map((k) => k.name.toLowerCase())]);
+  return [...names].sort().map((name) => ({
+    name,
+    iconUrl: resolveTagIcon(name, uploaded)?.src ?? null,
+  }));
 }
 
 /** Distinct tags in use across projects, posts and papers (lowercased, sorted). */
 export async function adminListContentTags(): Promise<string[]> {
   unstable_noStore();
   const supabase = await createClient();
-  const perField = await Promise.all([
-    tagsInUse(supabase, "tech_stack"),
-    tagsInUse(supabase, "tags"),
+  const perKind = await Promise.all([
+    tagsInUse(supabase, "stack"),
     tagsInUse(supabase, "topics"),
   ]);
-  return [...new Set(perField.flat().map((tag) => tag.toLowerCase()))].sort();
+  return [...new Set(perKind.flat().map((tag) => tag.toLowerCase()))].sort();
 }
 
 export async function adminListPapers() {
@@ -418,7 +437,9 @@ export async function adminGetDataset(id: string) {
       supabase.from("datasets").select("*").eq("id", id).maybeSingle(),
       supabase
         .from("dataset_versions")
-        .select("id, version, row_count, checksum, source_name, note, created_at")
+        .select(
+          "id, version, row_count, checksum, source_name, note, created_at",
+        )
         .eq("dataset_id", id)
         .order("version", { ascending: false }),
     ]);

@@ -9,15 +9,17 @@ export default async function EditProjectPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [project, tagOptions] = await Promise.all([
+  const [project, tagOptions, topicOptions] = await Promise.all([
     adminGetProject(id),
-    adminTagOptions("tech_stack"),
+    adminTagOptions("stack"),
+    adminTagOptions("topics"),
   ]);
   if (!project) notFound();
 
   return (
     <ProjectEditor
       tagOptions={tagOptions}
+      topicOptions={topicOptions}
       initial={{
         id: project.id,
         title: project.title,
@@ -26,6 +28,7 @@ export default async function EditProjectPage({
         description: project.description ?? "",
         content: project.content ?? "",
         tech_stack: project.tech_stack,
+        topics: project.topics,
         cover_image_url: project.cover_image_url ?? "",
         page_image_url: project.page_image_url ?? "",
         github_url: project.github_url ?? "",

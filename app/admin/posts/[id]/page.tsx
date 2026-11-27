@@ -13,10 +13,11 @@ export default async function EditPostPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [post, papers, tagOptions] = await Promise.all([
+  const [post, papers, tagOptions, stackOptions] = await Promise.all([
     adminGetPost(id),
     adminListPapers(),
-    adminTagOptions("tags"),
+    adminTagOptions("topics"),
+    adminTagOptions("stack"),
   ]);
   if (!post) notFound();
 
@@ -30,12 +31,14 @@ export default async function EditPostPage({
         content: post.content,
         cover_image_url: post.cover_image_url ?? "",
         tags: post.tags,
+        tech_stack: post.tech_stack,
         status: post.status,
         published_at: post.published_at,
         paperIds: post.paperIds,
       }}
       papers={papers.map((p) => ({ id: p.id, title: p.title }))}
       tagOptions={tagOptions}
+      stackOptions={stackOptions}
     />
   );
 }

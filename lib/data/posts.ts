@@ -13,7 +13,7 @@ export type PaperRef = Pick<
 >;
 
 const LIST_COLUMNS =
-  "id, slug, title, excerpt, cover_image_url, tags, status, published_at, reading_minutes, view_count, created_at, updated_at" as const;
+  "id, slug, title, excerpt, cover_image_url, tags, tech_stack, status, published_at, reading_minutes, view_count, created_at, updated_at" as const;
 
 const getPublishedPostsCached = unstable_cache(
   async (): Promise<PostListItem[]> => {
@@ -54,22 +54,41 @@ export function getPostBySlug(slug: string): Promise<Post | null> {
   );
 }
 
+/** Posts carrying `tag` as a topic or as a technology. */
 export async function getPostsByTag(tag: string): Promise<PostListItem[]> {
   const posts = await getPublishedPosts();
-  return posts.filter((post) => post.tags.includes(tag));
+  return posts.filter(
+    (post) => post.tags.includes(tag) || post.tech_stack.includes(tag),
+  );
 }
 
-export async function getAllTags(): Promise<{ tag: string; count: number }[]> {
+export type TagCount = {
+  tag: string;
+  count: number;
+  /** True for a technology (`posts.tech_stack`), false for a topic. */
+  stack: boolean;
+};
+
+/**
+ * Every topic and technology across published posts, most used first. Both
+ * share the /blog/tag/[tag] pages; `stack` says which row a tag belongs in.
+ */
+export async function getAllTags(): Promise<TagCount[]> {
   const posts = await getPublishedPosts();
-  const counts = new Map<string, number>();
+  const counts = new Map<string, TagCount>();
+  const bump = (tag: string, stack: boolean) => {
+    const entry = counts.get(tag) ?? { tag, count: 0, stack };
+    entry.count += 1;
+    entry.stack ||= stack;
+    counts.set(tag, entry);
+  };
   for (const post of posts) {
-    for (const tag of post.tags) {
-      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    for (const tag of post.tags) bump(tag, false);
+    for (const tech of post.tech_stack) {
+      if (!post.tags.includes(tech)) bump(tech, true);
     }
   }
-  return [...counts.entries()]
-    .map(([tag, count]) => ({ tag, count }))
-    .sort((a, b) => b.count - a.count);
+  return [...counts.values()].sort((a, b) => b.count - a.count);
 }
 
 /**

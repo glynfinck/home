@@ -112,7 +112,7 @@ values
     'Autonomous Recycling Robot',
     'An autonomous robot on NVIDIA Jetson that maps and navigates office spaces to collect plastic bottles.',
     'Capstone project combining SLAM-based navigation with a YOLOv3 detector trained to find bottles in cluttered office scenes.',
-    array['Python', 'ROS', 'NVIDIA Jetson', 'YOLOv3', 'SLAM'],
+    array['Python', 'ROS', 'NVIDIA Jetson', 'YOLOv3'],
     'https://github.com/glynfinck/recycling-robot',
     null,
     false,
@@ -124,7 +124,7 @@ values
     'CALVIN',
     'A competition robot that follows tape, reads infrared beacons, grabs "agents" with a crane and claw, and ziplines them home.',
     'Built for a first-year engineering physics robot competition, entirely on analog electronics and an Arduino-class board.',
-    array['Arduino', 'C++', 'TINAH Board', 'Robotics', 'Analog Electronics', 'CAD'],
+    array['Arduino', 'C++', 'TINAH Board'],
     'https://github.com/glynfinck/calvin',
     null,
     false,
@@ -153,6 +153,10 @@ on conflict (slug) do update set
   featured = excluded.featured,
   sort_order = excluded.sort_order,
   status = excluded.status;
+
+-- Project topics, kept apart from the stack (see 20261127000000_tag_types).
+update public.projects set topics = array['SLAM', 'Robotics'] where slug = 'recycling-robot';
+update public.projects set topics = array['Robotics', 'Analog Electronics', 'CAD'] where slug = 'calvin';
 
 -- Posts -----------------------------------------------------------------------
 
@@ -443,6 +447,10 @@ on conflict (slug) do update set
   status = excluded.status,
   published_at = excluded.published_at,
   reading_minutes = excluded.reading_minutes;
+
+-- Technologies a post is about, kept apart from its topic tags.
+update public.posts set tech_stack = array['Python', 'kdb'] where slug = 'the-mean-reversion-you-cant-trade';
+update public.posts set tech_stack = array['Claude', 'TypeScript', 'React'] where slug = 'ai-shines-on-defined-problems';
 
 -- Research papers -------------------------------------------------------------
 --
