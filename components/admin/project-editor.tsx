@@ -116,7 +116,9 @@ export function ProjectEditor({
             <Label>Status</Label>
             <Select
               value={values.status}
-              onValueChange={(v) => set("status", v as ProjectFormValues["status"])}
+              onValueChange={(v) =>
+                set("status", v as ProjectFormValues["status"])
+              }
             >
               <SelectTrigger>
                 <SelectValue />
@@ -206,7 +208,7 @@ export function ProjectEditor({
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex flex-wrap items-center gap-6">
           <label className="flex items-center gap-2 text-sm">
             <Switch
               checked={values.featured}
@@ -214,6 +216,21 @@ export function ProjectEditor({
             />
             Featured on home page
           </label>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="year" className="text-sm">
+              Year
+            </Label>
+            <Input
+              id="year"
+              type="number"
+              value={values.year ?? ""}
+              placeholder="none"
+              onChange={(e) =>
+                set("year", e.target.value ? Number(e.target.value) : null)
+              }
+              className="w-24 font-mono"
+            />
+          </div>
           <div className="flex items-center gap-2">
             <Label htmlFor="sort" className="text-sm">
               Sort order

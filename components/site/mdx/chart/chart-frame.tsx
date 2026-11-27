@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
  * tooltip may never be the only route to a value.
  */
 export function ChartFrame({
+  id,
   title,
   caption,
   source,
@@ -20,6 +21,8 @@ export function ChartFrame({
   children,
   className,
 }: {
+  /** Anchor for links from the prose: `[Fig. 2](#fig-pairs-equity)`. */
+  id?: string;
   title: string;
   caption?: string;
   source?: string;
@@ -36,13 +39,18 @@ export function ChartFrame({
 }) {
   return (
     <figure
+      id={id}
+      // Counted by the `figure` counter in globals.css; tables and code
+      // blocks are <figure>s too and do not carry this.
+      data-figure
       className={cn(
         "my-8 rounded-lg border border-border/60 bg-card/40 not-prose",
         className,
       )}
     >
       <div className="border-b border-border/60 px-4 py-3">
-        <p className="text-sm font-medium tracking-tight text-foreground">
+        {/* `figure-label` prefixes the running figure number (globals.css). */}
+        <p className="figure-label text-sm font-medium tracking-tight text-foreground">
           {title}
         </p>
       </div>
@@ -118,7 +126,10 @@ export function DataTable({
             {row.map((cell, j) => (
               <td
                 key={j}
-                className={cn("px-3 py-1.5", j > 0 && "text-right tabular-nums")}
+                className={cn(
+                  "px-3 py-1.5",
+                  j > 0 && "text-right tabular-nums",
+                )}
               >
                 {cell}
               </td>

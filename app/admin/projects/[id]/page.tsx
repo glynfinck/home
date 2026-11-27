@@ -31,6 +31,7 @@ export default async function EditProjectPage({
         live_url: project.live_url ?? "",
         featured: project.featured,
         sort_order: project.sort_order,
+        year: project.year,
         status: project.status,
       }}
     />

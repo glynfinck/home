@@ -75,14 +75,17 @@ export function AdminMobileNav() {
           <Menu className="size-4" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="top" className="h-dvh w-full max-w-full">
+      <SheetContent
+        side="top"
+        className="w-full max-w-full data-[side=top]:h-dvh"
+      >
         <SheetHeader>
           <SheetTitle className="text-left font-mono text-sm font-medium">
             glyn<span className="text-brand">.dev</span>
             <span className="ml-2 text-xs text-muted-foreground">admin</span>
           </SheetTitle>
         </SheetHeader>
-        <nav className="flex flex-1 flex-col gap-6 px-6 pt-4">
+        <nav className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 pt-4 pb-6">
           {ADMIN_NAV.map(({ href, label }) => {
             const active = isActive(pathname, href);
             return (

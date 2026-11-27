@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { CACHE_TAGS } from "@/lib/data/settings";
 import { estimateReadingMinutes } from "@/lib/format";
+import { highlightsSchema } from "@/lib/highlights";
 import { requireAdmin } from "@/lib/actions/guard";
 import {
   profileSettingsSchema,
@@ -125,6 +126,8 @@ const projectSchema = z.object({
   live_url: z.string().trim(),
   featured: z.boolean(),
   sort_order: z.number().int(),
+  // Shown on the project card. Null hides it.
+  year: z.number().int().min(1990).max(2100).nullable(),
   status: z.enum(["draft", "published", "archived"]),
 });
 
@@ -190,7 +193,9 @@ const tagKindSchema = z.object({
 
 export type TagKindInput = z.infer<typeof tagKindSchema>;
 
-export async function upsertTagKind(input: TagKindInput): Promise<ActionResult> {
+export async function upsertTagKind(
+  input: TagKindInput,
+): Promise<ActionResult> {
   try {
     const { supabase } = await requireAdmin();
     const parsed = tagKindSchema.safeParse(input);
@@ -245,6 +250,7 @@ const paperSchema = z.object({
   pdf_path: z.string().trim().min(1, "Upload a PDF first"),
   pdf_size_bytes: z.number().int().nullable(),
   topics: z.array(z.string().trim().min(1)).max(12),
+  highlights: highlightsSchema,
   status: z.enum(["draft", "published", "archived"]),
   published_at: z.string().nullable(),
 });
@@ -269,7 +275,11 @@ export async function upsertPaper(input: PaperInput): Promise<ActionResult> {
     };
 
     const query = id
-      ? supabase.from("research_papers").update(row).eq("id", id).select("id, slug")
+      ? supabase
+          .from("research_papers")
+          .update(row)
+          .eq("id", id)
+          .select("id, slug")
       : supabase.from("research_papers").insert(row).select("id, slug");
     const { data, error } = await query.single();
     if (error) {
@@ -351,7 +361,9 @@ const settingsPayloadSchema = z.discriminatedUnion("key", [
 
 export type SettingsInput = z.infer<typeof settingsPayloadSchema>;
 
-export async function saveSettings(input: SettingsInput): Promise<ActionResult> {
+export async function saveSettings(
+  input: SettingsInput,
+): Promise<ActionResult> {
   try {
     const { supabase } = await requireAdmin();
     const parsed = settingsPayloadSchema.safeParse(input);

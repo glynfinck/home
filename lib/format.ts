@@ -7,7 +7,35 @@ const DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
 
 export function formatDate(value: string | Date | null | undefined): string {
   if (!value) return "";
-  return DATE_FORMAT.format(typeof value === "string" ? new Date(value) : value);
+  return DATE_FORMAT.format(
+    typeof value === "string" ? new Date(value) : value,
+  );
+}
+
+const MONTH_DAY_FORMAT = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "2-digit",
+  timeZone: "UTC",
+});
+
+/**
+ * Month and zero-padded day (`Jul 06`), for a date column under a year
+ * heading. Padded so every entry is the same width in a monospace gutter.
+ */
+export function formatMonthDay(
+  value: string | Date | null | undefined,
+): string {
+  if (!value) return "";
+  return MONTH_DAY_FORMAT.format(
+    typeof value === "string" ? new Date(value) : value,
+  );
+}
+
+/** The UTC year as a string, or "" when there is no date. */
+export function yearOf(value: string | Date | null | undefined): string {
+  if (!value) return "";
+  const date = typeof value === "string" ? new Date(value) : value;
+  return String(date.getUTCFullYear());
 }
 
 const DATE_TIME_FORMAT = new Intl.DateTimeFormat("en-US", {
@@ -24,7 +52,9 @@ const DATE_TIME_FORMAT = new Intl.DateTimeFormat("en-US", {
  * the same day and a bare date can't tell them apart. UTC to match the
  * download chart, which buckets by UTC day.
  */
-export function formatDateTime(value: string | Date | null | undefined): string {
+export function formatDateTime(
+  value: string | Date | null | undefined,
+): string {
   if (!value) return "";
   return DATE_TIME_FORMAT.format(
     typeof value === "string" ? new Date(value) : value,

@@ -1,25 +1,36 @@
-import Link from "next/link";
+import { CommandPalette } from "@/components/site/command-palette";
+import { Footer } from "@/components/site/footer";
+import { Navbar } from "@/components/site/navbar";
+import { NotFoundContent } from "@/components/site/not-found-content";
+import { getProfileSettings, getSocialLinks } from "@/lib/data/settings";
 
-import { Button } from "@/components/ui/button";
-import { TypedText } from "@/components/site/typed-text";
+/**
+ * 404 for URLs that match no route.
+ *
+ * These never enter the `(site)` group, so its layout does not wrap them and
+ * the page used to render with no navbar or footer: a dead end with a single
+ * button. It mirrors `app/(site)/layout.tsx` so a mistyped URL lands on the
+ * same page as a missing post.
+ */
+export default async function RootNotFound() {
+  const [profile, socialLinks] = await Promise.all([
+    getProfileSettings(),
+    getSocialLinks(),
+  ]);
 
-export default function RootNotFound() {
   return (
-    <main className="flex flex-1 items-center">
-      <section className="mx-auto w-full max-w-5xl px-6 py-32">
-        <p className="font-mono text-sm text-brand">
-          <TypedText text="404: no such file or directory" speedMs={45} />
-        </p>
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight">
-          Page not found
-        </h1>
-        <p className="mt-3 text-muted-foreground">
-          The page you&apos;re looking for doesn&apos;t exist or has moved.
-        </p>
-        <Button asChild variant="outline" className="mt-8">
-          <Link href="/">cd ~/</Link>
-        </Button>
-      </section>
-    </main>
+    <>
+      <Navbar />
+      <main className="flex-1">
+        <NotFoundContent />
+      </main>
+      <Footer
+        name={profile.name}
+        socialLinks={socialLinks}
+        location={profile.location}
+        timezone={profile.timezone}
+      />
+      <CommandPalette email={profile.email ?? undefined} />
+    </>
   );
 }

@@ -18,6 +18,7 @@ export function Figure({
 }) {
   return (
     <figure
+      data-figure
       className="my-8"
       style={
         width !== undefined
@@ -38,7 +39,7 @@ export function Figure({
         className="w-full rounded-lg border border-border"
       />
       {caption ? (
-        <figcaption className="mt-2 text-center text-sm text-muted-foreground">
+        <figcaption className="figure-label mt-2 text-center text-sm text-muted-foreground">
           {caption}
         </figcaption>
       ) : null}

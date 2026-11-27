@@ -3,7 +3,6 @@ import { Suspense } from "react";
 
 import { CardGridSkeleton } from "@/components/site/loading-shell";
 import { ResearchCard } from "@/components/site/research-card";
-import { TypedTextInView } from "@/components/site/typed-text-in-view";
 import { getPublishedPapers } from "@/lib/data/research";
 
 export const metadata: Metadata = {
@@ -15,10 +14,7 @@ export const metadata: Metadata = {
 export default function ResearchPage() {
   return (
     <section className="mx-auto w-full max-w-5xl px-6 py-16">
-      <p className="font-mono text-xs tracking-widest text-brand uppercase">
-        <TypedTextInView text="Research" />
-      </p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight">Research</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">Research</h1>
       <p className="mt-3 max-w-2xl text-muted-foreground">
         Write-ups and empirical studies. Every paper is a free PDF, no sign-up
         required.

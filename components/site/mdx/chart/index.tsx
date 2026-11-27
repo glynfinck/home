@@ -1,7 +1,10 @@
 import { Suspense } from "react";
 
 import { ChartError } from "@/components/site/mdx/chart/chart-frame";
-import { ChartFigure, DatasetTable } from "@/components/site/mdx/chart/chart-figure";
+import {
+  ChartFigure,
+  DatasetTable,
+} from "@/components/site/mdx/chart/chart-figure";
 import { ChartPending } from "@/components/site/mdx/chart/chart-pending";
 import {
   InteractiveFigure,
@@ -89,6 +92,7 @@ async function renderChart(
     Object.entries(data).map(([name, dataset]) => [name, dataset.payload]),
   );
 
+  const id = `fig-${chart.slug}`;
   const title = titleOverride ?? chart.title;
   const caption = captionOverride ?? chart.caption ?? undefined;
   const source = data.main?.source ?? undefined;
@@ -109,6 +113,7 @@ async function renderChart(
   if (!control) {
     return (
       <ChartFigure
+        id={id}
         title={title}
         caption={caption}
         source={source}
@@ -116,7 +121,9 @@ async function renderChart(
         svg={svg}
         spec={compiled}
         data={rows}
-        table={data.main ? <DatasetTable payload={data.main.payload} /> : undefined}
+        table={
+          data.main ? <DatasetTable payload={data.main.payload} /> : undefined
+        }
       />
     );
   }
@@ -128,7 +135,9 @@ async function renderChart(
   // in prose next to the figure, so they use the site's formatters.
   const fields = control.fields ?? {};
   const series = {
-    gross: numericColumn(main.payload, fields.gross ?? "gross").map((v) => v ?? 0),
+    gross: numericColumn(main.payload, fields.gross ?? "gross").map(
+      (v) => v ?? 0,
+    ),
     turnover: numericColumn(main.payload, fields.turnover ?? "turnover").map(
       (v) => v ?? 0,
     ),
@@ -146,6 +155,7 @@ async function renderChart(
 
   return (
     <InteractiveFigure
+      id={id}
       title={title}
       caption={caption}
       source={source}

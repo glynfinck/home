@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { PaperEditor } from "@/components/admin/paper-editor";
 import { adminGetPaper, adminTagOptions } from "@/lib/data/admin";
+import { parseHighlights } from "@/lib/highlights";
 
 export default async function EditPaperPage({
   params,
@@ -27,6 +28,7 @@ export default async function EditPaperPage({
         pdf_path: paper.pdf_path,
         pdf_size_bytes: paper.pdf_size_bytes,
         topics: paper.topics,
+        highlights: parseHighlights(paper.highlights),
         status: paper.status,
         published_at: paper.published_at,
       }}

@@ -82,7 +82,7 @@ export function ArticleBodySkeleton() {
   );
 }
 
-/** Post rows, for the blog index and tag pages. */
+/** The dated log, for the blog index. Mirrors `PostLog`'s gutter and rows. */
 export function PostRowsSkeleton({
   command,
   rows = 5,
@@ -93,15 +93,16 @@ export function PostRowsSkeleton({
   return (
     <div>
       <TerminalLoader command={command} />
-      <div className="mt-6 divide-y divide-border/60 border-t border-border/60">
+      <Skeleton className="mt-10 h-3 w-10" />
+      <div className="mt-2 divide-y divide-border/60 border-t border-border/60">
         {Array.from({ length: rows }, (_, i) => (
-          <div key={i} className="space-y-2.5 py-6">
-            <div className="flex items-baseline justify-between gap-4">
-              <Skeleton className="h-5 w-2/3" />
-              <Skeleton className="h-3 w-24 shrink-0" />
-            </div>
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-4/5" />
+          <div
+            key={i}
+            className="grid grid-cols-[3.75rem_minmax(0,1fr)] gap-x-4 gap-y-2 py-4"
+          >
+            <Skeleton className="h-3 w-12" />
+            <Skeleton className="h-5 w-2/3" />
+            <Skeleton className="col-start-2 h-4 w-full" />
           </div>
         ))}
       </div>
@@ -114,10 +115,13 @@ export function CardGridSkeleton({
   command,
   cards = 4,
   columns = "sm:grid-cols-2",
+  cover = false,
 }: {
   command: string;
   cards?: number;
   columns?: string;
+  /** Project cards open with a cover band; research cards do not. */
+  cover?: boolean;
 }) {
   return (
     <div>
@@ -126,15 +130,18 @@ export function CardGridSkeleton({
         {Array.from({ length: cards }, (_, i) => (
           <div
             key={i}
-            className="space-y-3 rounded-lg border border-border/60 bg-card/40 p-6"
+            className="overflow-hidden rounded-lg border border-border/60 bg-card/40"
           >
-            <Skeleton className="h-3 w-32" />
-            <Skeleton className="h-5 w-3/5" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-4/5" />
-            <div className="flex gap-1.5 pt-1">
-              <Skeleton className="h-5 w-14 rounded-full" />
-              <Skeleton className="h-5 w-16 rounded-full" />
+            {cover ? <Skeleton className="h-28 w-full rounded-none" /> : null}
+            <div className="space-y-3 p-6">
+              {cover ? null : <Skeleton className="h-3 w-32" />}
+              <Skeleton className="h-5 w-3/5" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-4/5" />
+              <div className="flex gap-1.5 pt-1">
+                <Skeleton className="h-5 w-14 rounded-full" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
             </div>
           </div>
         ))}

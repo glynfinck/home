@@ -17,7 +17,12 @@ export default async function SiteLayout({
     <>
       <Navbar />
       <main className="flex-1">{children}</main>
-      <Footer name={profile.name} socialLinks={socialLinks} />
+      <Footer
+        name={profile.name}
+        socialLinks={socialLinks}
+        location={profile.location}
+        timezone={profile.timezone}
+      />
       {/* Mounted once for the whole site; it loads its index lazily on the
           first open, so this costs nothing on pages nobody searches from. */}
       <CommandPalette email={profile.email ?? undefined} />

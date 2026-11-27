@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Suspense } from "react";
 
-import { Badge } from "@/components/ui/badge";
 import { PostRowsSkeleton } from "@/components/site/loading-shell";
-import { PostRow } from "@/components/site/post-card";
-import { TypedTextInView } from "@/components/site/typed-text-in-view";
+import { PostLog } from "@/components/site/post-log";
+import { TagFilter } from "@/components/site/tag-filter";
 import { getAllTags, getPublishedPosts } from "@/lib/data/posts";
 
 export const metadata: Metadata = {
@@ -16,21 +14,23 @@ export const metadata: Metadata = {
 
 export default function BlogPage() {
   return (
-    <section className="mx-auto w-full max-w-3xl px-6 py-16">
-      <p className="font-mono text-xs tracking-widest text-brand uppercase">
-        <TypedTextInView text="Blog" />
-      </p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight">Writing</h1>
-      <p className="mt-3 text-muted-foreground">
-        Software engineering, research, and the experiments in between.
-      </p>
+    <section className="mx-auto w-full max-w-5xl px-6 py-16">
+      {/* Reading width, but starting at the navbar's left edge like every
+          other index, so the heading does not shift sideways between
+          sections. */}
+      <div className="max-w-3xl">
+        <h1 className="text-3xl font-semibold tracking-tight">Writing</h1>
+        <p className="mt-3 text-muted-foreground">
+          Software engineering, research, and the experiments in between.
+        </p>
 
-      {/* Inline rather than a loading.tsx: a route-level loading file here
-          would sit above [slug] and tag/[tag] and commit HTTP 200 before
-          either could call notFound(). See components/site/loading-shell. */}
-      <Suspense fallback={<PostRowsSkeleton command="ls blog/" />}>
-        <PostList />
-      </Suspense>
+        {/* Inline rather than a loading.tsx: a route-level loading file here
+            would sit above [slug] and tag/[tag] and commit HTTP 200 before
+            either could call notFound(). See components/site/loading-shell. */}
+        <Suspense fallback={<PostRowsSkeleton command="ls blog/" />}>
+          <PostList />
+        </Suspense>
+      </div>
     </section>
   );
 }
@@ -40,23 +40,10 @@ async function PostList() {
 
   return (
     <>
-      {tags.length > 0 ? (
-        <div className="mt-6 flex flex-wrap gap-1.5">
-          {tags.map(({ tag, count }) => (
-            <Badge key={tag} variant="secondary" asChild>
-              <Link href={`/blog/tag/${encodeURIComponent(tag)}`}>
-                {tag} <span className="text-muted-foreground">{count}</span>
-              </Link>
-            </Badge>
-          ))}
-        </div>
-      ) : null}
-
-      <div className="mt-6 divide-y divide-border/60 border-t border-border/60">
-        {posts.map((post) => (
-          <PostRow key={post.id} post={post} />
-        ))}
+      <div className="mt-6">
+        <TagFilter tags={tags} total={posts.length} />
       </div>
+      <PostLog posts={posts} className="mt-10" />
       {posts.length === 0 ? (
         <p className="mt-10 text-muted-foreground">No posts yet.</p>
       ) : null}
