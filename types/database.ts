@@ -409,6 +409,7 @@ export type Database = {
           github_url: string | null
           id: string
           live_url: string | null
+          page_image_url: string | null
           slug: string
           sort_order: number
           status: Database["public"]["Enums"]["content_status"]
@@ -427,6 +428,7 @@ export type Database = {
           github_url?: string | null
           id?: string
           live_url?: string | null
+          page_image_url?: string | null
           slug: string
           sort_order?: number
           status?: Database["public"]["Enums"]["content_status"]
@@ -445,6 +447,7 @@ export type Database = {
           github_url?: string | null
           id?: string
           live_url?: string | null
+          page_image_url?: string | null
           slug?: string
           sort_order?: number
           status?: Database["public"]["Enums"]["content_status"]

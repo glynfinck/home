@@ -27,6 +27,7 @@ export default async function EditProjectPage({
         content: project.content ?? "",
         tech_stack: project.tech_stack,
         cover_image_url: project.cover_image_url ?? "",
+        page_image_url: project.page_image_url ?? "",
         github_url: project.github_url ?? "",
         live_url: project.live_url ?? "",
         featured: project.featured,
