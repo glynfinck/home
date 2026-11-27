@@ -590,10 +590,10 @@
       display: block;
       float: right;
       clear: right;
-      width: 12rem;
-      /* Reaches into column 3 of the article grid: 2rem gap + 12rem of the
-         14rem rail. Keep in sync with the grid template in the post page. */
-      margin-right: -14rem;
+      width: 11rem;
+      /* Reaches into column 3 of the article grid: the 2rem gap plus the
+         11rem rail. Keep in sync with the grid template in the post page. */
+      margin-right: -13rem;
       margin-block: 0.25rem 1rem;
       text-align: left;
     }

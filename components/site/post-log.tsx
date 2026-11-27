@@ -94,7 +94,8 @@ function PostLogRow({
         </span>
       ) : null}
       {post.excerpt ? (
-        <p className="col-start-2 line-clamp-2 text-sm text-muted-foreground">
+        // Rows span the page; the excerpt keeps a reading measure.
+        <p className="col-start-2 line-clamp-2 max-w-3xl text-sm text-muted-foreground">
           {post.excerpt}
         </p>
       ) : null}
