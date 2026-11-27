@@ -194,9 +194,14 @@ const tagKindSchema = z.object({
   id: z.string().uuid().optional(),
   name: z.string().trim().min(1, "Tag name is required").max(40),
   icon_url: z.string().trim().min(1, "Upload an icon first"),
+  mono: z.boolean().default(false),
+  aliases: z
+    .array(z.string().trim().toLowerCase().min(1).max(40))
+    .max(20)
+    .default([]),
 });
 
-export type TagKindInput = z.infer<typeof tagKindSchema>;
+export type TagKindInput = z.input<typeof tagKindSchema>;
 
 export async function upsertTagKind(
   input: TagKindInput,
@@ -209,7 +214,11 @@ export async function upsertTagKind(
     }
     const { id, ...fields } = parsed.data;
     // Tags match kinds case-insensitively; stored lowercase like picker tags
-    const row = { ...fields, name: fields.name.toLowerCase() };
+    const row = {
+      ...fields,
+      name: fields.name.toLowerCase(),
+      aliases: [...new Set(fields.aliases)],
+    };
 
     const query = id
       ? supabase.from("tag_kinds").update(row).eq("id", id).select("id")

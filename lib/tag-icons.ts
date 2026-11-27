@@ -1,18 +1,15 @@
 /**
  * Logos for technology tags.
  *
- * Tags are free text ("C++", "Next.js", "Tailwind CSS", "kdb"), so every
- * lookup goes through `tagKey`, which folds them to the bare lowercase form
- * the `tag_kinds` table already uses ("cplusplus", "nextjs", "tailwindcss").
+ * Every logo is a row in `tag_kinds`, managed at /admin/kinds: an icon, a
+ * `mono` flag, and `aliases` (other spellings that show the same logo).
+ * Only technologies (`tech_stack` on posts and projects) get icons; topics
+ * stay plain chips.
  *
- * Kinds uploaded in /admin win. The built-in set below is the fallback, so a
- * technology shows its logo without anyone uploading one. Only technologies
- * (`tech_stack` on posts and projects) get icons; topics stay plain chips.
- *
- * Files live in `public/tag-icons/`. Colour logos are from devicon (MIT) and
- * simple-icons (CC0) with the brand colour filled in. Marks that are black
- * in the original are `mono`: they are drawn in the chip's text colour, so
- * they stay visible in dark mode and on the filled active chip.
+ * Tags are free text ("C++", "Next.js", "Tailwind CSS", "kdb"), so names,
+ * aliases and tags all go through `tagKey`, which folds them to a bare
+ * lowercase form ("cplusplus", "nextjs", "tailwindcss"). The database has the
+ * same function as `public.tag_key`.
  */
 
 export type TagIcon = {
@@ -21,56 +18,14 @@ export type TagIcon = {
   mono: boolean;
 };
 
-const BUILT_IN: Record<string, { file: string; mono?: true }> = {
-  arduino: { file: "arduino" },
-  claude: { file: "claude" },
-  cplusplus: { file: "cplusplus" },
-  expo: { file: "expo", mono: true },
-  kx: { file: "kx", mono: true },
-  matlab: { file: "matlab" },
-  modelcontextprotocol: { file: "mcp", mono: true },
-  mdx: { file: "mdx", mono: true },
-  nextjs: { file: "nextjs", mono: true },
-  nvidia: { file: "nvidia" },
-  pixijs: { file: "pixijs" },
-  playwright: { file: "playwright" },
-  pwa: { file: "pwa" },
-  pyodide: { file: "pyodide" },
-  python: { file: "python" },
-  react: { file: "react" },
-  ros: { file: "ros", mono: true },
-  shadcnui: { file: "shadcn", mono: true },
-  stripe: { file: "stripe" },
-  supabase: { file: "supabase" },
-  tailwindcss: { file: "tailwindcss" },
-  typescript: { file: "typescript" },
-  unrealengine: { file: "unrealengine", mono: true },
-  vercel: { file: "vercel", mono: true },
-  yolo: { file: "yolo", mono: true },
-};
+/** Icons by `tagKey`, for kind names and their aliases. */
+export type TagIconMap = Record<string, TagIcon>;
 
-/** Other spellings of a technology, by `tagKey`, pointing at its logo. */
-const ALIASES: Record<string, string> = {
-  cpp: "cplusplus",
-  kdb: "kx",
-  kdbplus: "kx",
-  q: "kx",
-  mcp: "modelcontextprotocol",
-  next: "nextjs",
-  nvidiajetson: "nvidia",
-  jetson: "nvidia",
-  pixi: "pixijs",
-  reactnative: "react",
-  shadcn: "shadcnui",
-  tailwind: "tailwindcss",
-  ts: "typescript",
-  unrealengine4: "unrealengine",
-  unrealengine5: "unrealengine",
-  ue4: "unrealengine",
-  ue5: "unrealengine",
-  yolov3: "yolo",
-  yolov5: "yolo",
-  yolov8: "yolo",
+type KindLike = {
+  name: string;
+  icon_url: string;
+  mono: boolean;
+  aliases: string[];
 };
 
 /** "C++" → "cplusplus", "Next.js" → "nextjs", "Tailwind CSS" → "tailwindcss". */
@@ -82,26 +37,26 @@ export function tagKey(tag: string): string {
     .replace(/[^a-z0-9]/g, "");
 }
 
-/**
- * The icon for a tag, or null when it has none. `uploaded` is the kinds map
- * from `getTagIconMap`, keyed by `tagKey`.
- */
+/** The lookup map for `resolveTagIcon`. A kind's own name beats an alias. */
+export function buildTagIconMap(kinds: KindLike[]): TagIconMap {
+  const map: TagIconMap = {};
+  for (const kind of kinds) {
+    const icon = { src: kind.icon_url, mono: kind.mono };
+    for (const alias of kind.aliases) {
+      const key = tagKey(alias);
+      if (key && !(key in map)) map[key] = icon;
+    }
+  }
+  for (const kind of kinds) {
+    map[tagKey(kind.name)] = { src: kind.icon_url, mono: kind.mono };
+  }
+  return map;
+}
+
+/** The icon for a tag, or null when it has none. */
 export function resolveTagIcon(
   tag: string,
-  uploaded?: Record<string, string>,
+  icons: TagIconMap | undefined,
 ): TagIcon | null {
-  const key = tagKey(tag);
-  const canonical = ALIASES[key] ?? key;
-
-  const url = uploaded?.[key] ?? uploaded?.[canonical];
-  if (url) return { src: url, mono: false };
-
-  const builtIn = BUILT_IN[canonical];
-  if (builtIn) {
-    return {
-      src: `/tag-icons/${builtIn.file}.svg`,
-      mono: builtIn.mono ?? false,
-    };
-  }
-  return null;
+  return icons?.[tagKey(tag)] ?? null;
 }
