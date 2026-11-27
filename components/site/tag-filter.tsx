@@ -1,16 +1,21 @@
 import { Chip } from "@/components/site/chip";
+import { TagIcon } from "@/components/site/tag-icon";
+import { TagRow } from "@/components/site/tag-row";
+import { getTagIconMap } from "@/lib/data/tag-kinds";
+import type { TagCount } from "@/lib/data/posts";
 
 /**
- * The tag row above a post list. One row serves the blog index and every tag
- * page, with the current filter filled, so moving between tags does not swap
- * the page furniture around.
+ * The tag rows above a post list. One block serves the blog index and every
+ * tag page, with the current filter filled, so moving between tags does not
+ * swap the page furniture around. Topics and technologies get a row each;
+ * technologies carry their logo.
  */
-export function TagFilter({
+export async function TagFilter({
   tags,
   total,
   active,
 }: {
-  tags: { tag: string; count: number }[];
+  tags: TagCount[];
   /** Number of posts across all tags, shown on the "all" chip. */
   total: number;
   /** The tag being viewed, or undefined on the unfiltered index. */
@@ -18,20 +23,32 @@ export function TagFilter({
 }) {
   if (tags.length === 0) return null;
 
+  const uploaded = await getTagIconMap();
+  const topicTags = tags.filter((tag) => !tag.stack);
+  const stackTags = tags.filter((tag) => tag.stack);
+
+  const chip = ({ tag, count, stack }: TagCount) => (
+    <Chip
+      key={tag}
+      href={`/blog/tag/${encodeURIComponent(tag)}`}
+      active={tag === active}
+    >
+      {stack ? <TagIcon tag={tag} uploaded={uploaded} /> : null}
+      {tag} <Count>{count}</Count>
+    </Chip>
+  );
+
   return (
-    <nav aria-label="Filter posts by tag" className="flex flex-wrap gap-1.5">
-      <Chip href="/blog" active={active === undefined}>
-        all <Count>{total}</Count>
-      </Chip>
-      {tags.map(({ tag, count }) => (
-        <Chip
-          key={tag}
-          href={`/blog/tag/${encodeURIComponent(tag)}`}
-          active={tag === active}
-        >
-          {tag} <Count>{count}</Count>
+    <nav aria-label="Filter posts by tag" className="space-y-2">
+      <TagRow label="topics">
+        <Chip href="/blog" active={active === undefined}>
+          all <Count>{total}</Count>
         </Chip>
-      ))}
+        {topicTags.map(chip)}
+      </TagRow>
+      {stackTags.length > 0 ? (
+        <TagRow label="stack">{stackTags.map(chip)}</TagRow>
+      ) : null}
     </nav>
   );
 }

@@ -2,11 +2,15 @@ import { ProjectEditor } from "@/components/admin/project-editor";
 import { adminTagOptions } from "@/lib/data/admin";
 
 export default async function NewProjectPage() {
-  const tagOptions = await adminTagOptions("tech_stack");
+  const [tagOptions, topicOptions] = await Promise.all([
+    adminTagOptions("stack"),
+    adminTagOptions("topics"),
+  ]);
 
   return (
     <ProjectEditor
       tagOptions={tagOptions}
+      topicOptions={topicOptions}
       initial={{
         title: "",
         slug: "",
@@ -14,6 +18,7 @@ export default async function NewProjectPage() {
         description: "",
         content: "",
         tech_stack: [],
+        topics: [],
         cover_image_url: "",
         github_url: "",
         live_url: "",
