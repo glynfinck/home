@@ -20,6 +20,7 @@ export default async function NewProjectPage() {
         tech_stack: [],
         topics: [],
         cover_image_url: "",
+        page_image_url: "",
         github_url: "",
         live_url: "",
         featured: false,

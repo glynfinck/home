@@ -7,6 +7,7 @@ import { ArrowUpRight, Globe } from "lucide-react";
 import { Suspense } from "react";
 
 import { ArticleBodySkeleton } from "@/components/site/loading-shell";
+import { ProjectCover } from "@/components/site/project-cover";
 import { GitHubIcon } from "@/components/site/social-icons";
 import { Chip } from "@/components/site/chip";
 import { StackBadge } from "@/components/site/stack-badge";
@@ -14,6 +15,7 @@ import { getProjectBySlug, getPublishedProjects } from "@/lib/data/projects";
 import { getTagIconMap } from "@/lib/data/tag-kinds";
 import { formatDate } from "@/lib/format";
 import { Mdx } from "@/lib/mdx";
+import { cn } from "@/lib/utils";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -60,6 +62,26 @@ export default async function ProjectPage({ params }: Props) {
           {project.summary}
         </p>
       </header>
+
+      {/* The page image when there is one (16:9); else the card image in the
+          card's 8:3 band; else the drawn plate, kept at a readable size. */}
+      <ProjectCover
+        project={{
+          ...project,
+          cover_image_url: project.page_image_url ?? project.cover_image_url,
+        }}
+        sizes="(min-width: 1024px) 976px, 100vw"
+        priority
+        fit="meet"
+        className={cn(
+          "mt-10 rounded-lg border border-border/60",
+          project.page_image_url
+            ? "aspect-video"
+            : project.cover_image_url
+              ? "aspect-[8/3]"
+              : "h-40 sm:h-56",
+        )}
+      />
 
       <div className="mt-10 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-12">
         <aside className="order-first lg:order-last lg:sticky lg:top-20">

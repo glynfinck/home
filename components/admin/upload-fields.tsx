@@ -10,16 +10,20 @@ import { Spinner } from "@/components/ui/spinner";
 import { createClient } from "@/lib/supabase/client";
 import { formatBytes, slugify } from "@/lib/format";
 import { MEDIA_IMAGE_ACCEPT, uploadToMediaBucket } from "@/lib/media";
+import { cn } from "@/lib/utils";
 
 /** Direct browser upload to the public `media` bucket (admin storage RLS). */
 export function ImageUploadField({
   value,
   onChange,
   prefix,
+  previewClassName = "h-14 w-24",
 }: {
   value: string;
   onChange: (url: string) => void;
   prefix: string;
+  /** Size of the thumbnail; match it to where the image is shown. */
+  previewClassName?: string;
 }) {
   const [uploading, setUploading] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -38,13 +42,13 @@ export function ImageUploadField({
   }
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-wrap items-center gap-3">
       {value ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={value}
           alt="Cover"
-          className="h-14 w-24 rounded-md border object-cover"
+          className={cn("rounded-md border object-cover", previewClassName)}
         />
       ) : null}
       <input
