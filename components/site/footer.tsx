@@ -44,7 +44,7 @@ export function Footer({
 
           Grid placement is explicit, so a missing piece (no commit in dev, no
           time zone) leaves a gap instead of shuffling the others. */}
-      <div className="mx-auto grid w-full max-w-5xl grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2.5 px-6 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:flex lg:gap-y-0 lg:py-3">
+      <div className="mx-auto grid w-full max-w-5xl grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2.5 px-6 py-4 lg:flex lg:gap-y-0 lg:py-3">
         <span className="col-start-1 row-start-1 flex min-w-0 items-center gap-x-3 lg:contents">
           <span className="shrink-0 rounded-sm bg-brand px-1.5 py-0.5 font-medium text-background">
             glyn.dev
