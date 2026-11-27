@@ -7,7 +7,9 @@
 -- to the drawn plate, so existing rows keep working without it.
 --
 -- Additive and nullable. Table-level grants and RLS policies already cover
--- new columns.
+-- new columns. `if not exists` because this file first shipped under version
+-- 20261127000000, which #18's tag_types migration now uses: a database that
+-- ran the earlier version (the PR's preview branch) already has the column.
 
 alter table public.projects
-  add column page_image_url text;
+  add column if not exists page_image_url text;
