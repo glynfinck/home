@@ -60,6 +60,7 @@ describe("resolveTagIcon", () => {
       "Pixi.js",
       "Playwright",
       "PWA",
+      "Pyodide",
       "Python",
       "React",
       "ROS",
