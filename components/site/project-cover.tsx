@@ -4,7 +4,11 @@ import type { Project } from "@/lib/data/projects";
 import { PLATE, plateKind, plateShapes, type PlateShape } from "@/lib/plate";
 import { cn } from "@/lib/utils";
 
-const TONE = { brand: "var(--brand)", dim: "var(--muted-foreground)" } as const;
+const TONE = {
+  brand: "var(--brand)",
+  dim: "var(--muted-foreground)",
+  fg: "var(--foreground)",
+} as const;
 const FILL = { ...TONE, surface: "var(--background)", none: "none" } as const;
 
 /**
@@ -19,6 +23,8 @@ export function ProjectCover({
   project,
   sizes,
   className,
+  priority,
+  fit = "slice",
 }: {
   project: Pick<
     Project,
@@ -27,12 +33,21 @@ export function ProjectCover({
   /** `sizes` for an uploaded image; depends on where the cover is placed. */
   sizes: string;
   className?: string;
+  /** Above the fold (the project page's banner): load it straight away. */
+  priority?: boolean;
+  /**
+   * How a drawn plate fills its box. `slice` (cards) fills it and crops;
+   * `meet` (the page banner) keeps the whole drawing at a readable scale,
+   * centred, so it is not blown up to the width of the page.
+   */
+  fit?: "slice" | "meet";
 }) {
   if (project.cover_image_url) {
     return (
       <div className={cn("relative overflow-hidden bg-muted", className)}>
         <Image
           src={project.cover_image_url}
+          priority={priority}
           alt=""
           fill
           sizes={sizes}
@@ -49,9 +64,9 @@ export function ProjectCover({
       <svg
         aria-hidden
         viewBox={`0 0 ${PLATE.width} ${PLATE.height}`}
-        // `slice` keeps the drawing's proportions and crops the overflow, so
-        // one plate fills a card and a wide banner alike.
-        preserveAspectRatio="xMidYMid slice"
+        // Both keep the drawing's proportions: `slice` crops the overflow,
+        // `meet` leaves margin round it.
+        preserveAspectRatio={`xMidYMid ${fit}`}
         className="block size-full"
       >
         {shapes.map((shape, i) => (
@@ -70,8 +85,10 @@ function Shape({ shape }: { shape: PlateShape }) {
         y={shape.y}
         width={shape.w}
         height={shape.h}
-        rx={1.5}
-        fill={TONE[shape.fill]}
+        rx={shape.radius ?? 1.5}
+        fill={FILL[shape.fill]}
+        stroke={shape.stroke ? TONE[shape.stroke] : undefined}
+        strokeWidth={shape.stroke ? (shape.width ?? 1.5) : undefined}
         opacity={shape.opacity}
       />
     );
@@ -84,9 +101,38 @@ function Shape({ shape }: { shape: PlateShape }) {
         r={shape.r}
         fill={FILL[shape.fill]}
         stroke={shape.stroke ? TONE[shape.stroke] : undefined}
-        strokeWidth={shape.stroke ? 1.5 : undefined}
+        strokeWidth={shape.stroke ? (shape.width ?? 1.5) : undefined}
         opacity={shape.opacity}
       />
+    );
+  }
+  if (shape.type === "path") {
+    return (
+      <path
+        d={shape.d}
+        fill={FILL[shape.fill]}
+        stroke={shape.stroke ? TONE[shape.stroke] : undefined}
+        strokeWidth={shape.stroke ? (shape.width ?? 1.5) : undefined}
+        strokeDasharray={shape.dash}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity={shape.opacity}
+      />
+    );
+  }
+  if (shape.type === "text") {
+    return (
+      <text
+        x={shape.x}
+        y={shape.y}
+        fill={TONE[shape.tone]}
+        fontSize={shape.size}
+        textAnchor={shape.anchor}
+        opacity={shape.opacity}
+        className="font-mono"
+      >
+        {shape.text}
+      </text>
     );
   }
   return (

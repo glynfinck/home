@@ -123,7 +123,9 @@ const projectSchema = z.object({
   content: z.string(),
   tech_stack: z.array(z.string().trim().min(1)).max(20),
   topics: z.array(z.string().trim().min(1)).max(12).default([]),
+  // The card image on lists, and the image at the top of the project's page.
   cover_image_url: z.string().trim(),
+  page_image_url: z.string().trim(),
   github_url: z.string().trim(),
   live_url: z.string().trim(),
   featured: z.boolean(),
@@ -150,6 +152,7 @@ export async function upsertProject(
       description: fields.description || null,
       content: fields.content || null,
       cover_image_url: fields.cover_image_url || null,
+      page_image_url: fields.page_image_url || null,
       github_url: fields.github_url || null,
       live_url: fields.live_url || null,
     };
