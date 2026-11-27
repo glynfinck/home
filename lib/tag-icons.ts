@@ -35,6 +35,7 @@ const BUILT_IN: Record<string, { file: string; mono?: true }> = {
   pixijs: { file: "pixijs" },
   playwright: { file: "playwright" },
   pwa: { file: "pwa" },
+  pyodide: { file: "pyodide" },
   python: { file: "python" },
   react: { file: "react" },
   ros: { file: "ros", mono: true },
