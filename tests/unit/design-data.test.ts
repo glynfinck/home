@@ -4,7 +4,7 @@ import { bibtex } from "@/lib/citation";
 import { formatMonthDay, yearOf } from "@/lib/format";
 import { parseHighlights } from "@/lib/highlights";
 import { OU, simulateOu } from "@/lib/ou";
-import { plateKind, plateShapes } from "@/lib/plate";
+import { PLATE, PLATE_KINDS, plateKind, plateShapes } from "@/lib/plate";
 import { profileFacts, profileSettingsSchema } from "@/lib/settings";
 
 describe("parseHighlights", () => {
@@ -109,6 +109,23 @@ describe("project plates", () => {
     );
   });
 
+  it("gives each of the live projects a plate about what it does", () => {
+    expect(
+      plateKind(project("Jonz", "A chore app for shared houses and families")),
+    ).toBe("rota");
+    expect(plateKind(project("Pub Golf", "playing pub golf on phones"))).toBe(
+      "scorecard",
+    );
+    expect(
+      plateKind(
+        project("Precision OS: VR Surgical Planning", "bones from 3D CT scans"),
+      ),
+    ).toBe("scan");
+    expect(
+      plateKind(project("glyn.dev", "a personal platform", ["Next.js"])),
+    ).not.toBe("scan");
+  });
+
   it("matches whole words, so a pipeline is not a line follower", () => {
     expect(plateKind(project("ETL", "a data pipeline"))).not.toBe("line");
   });
@@ -117,15 +134,27 @@ describe("project plates", () => {
     expect(plateShapes("graph", "graph-editor")).toEqual(
       plateShapes("graph", "graph-editor"),
     );
-    for (const kind of [
-      "graph",
-      "map",
-      "line",
-      "wave",
-      "blocks",
-      "page",
-    ] as const) {
+    for (const kind of PLATE_KINDS) {
       expect(plateShapes(kind, "seed").length).toBeGreaterThan(0);
+    }
+  });
+
+  it("keeps every drawing inside the plate", () => {
+    const inside = ([x, y]: [number, number]) =>
+      x >= 0 && x <= PLATE.width && y >= 0 && y <= PLATE.height;
+    for (const kind of PLATE_KINDS) {
+      for (const seed of ["a", "graph-editor", "jonz", "calvin", "x-y-z"]) {
+        for (const shape of plateShapes(kind, seed)) {
+          if (shape.type === "line")
+            expect(shape.points.every(inside)).toBe(true);
+          if (shape.type === "circle")
+            expect(inside([shape.cx, shape.cy])).toBe(true);
+          if (shape.type === "rect") {
+            expect(inside([shape.x, shape.y])).toBe(true);
+            expect(inside([shape.x + shape.w, shape.y + shape.h])).toBe(true);
+          }
+        }
+      }
     }
   });
 });

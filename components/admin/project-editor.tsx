@@ -170,13 +170,34 @@ export function ProjectEditor({
           onChange={(content) => set("content", content)}
         />
 
-        <div className="grid gap-2">
-          <Label>Cover image</Label>
-          <ImageUploadField
-            value={values.cover_image_url}
-            onChange={(url) => set("cover_image_url", url)}
-            prefix="projects"
-          />
+        <div className="grid gap-6 sm:grid-cols-2 sm:gap-4">
+          <div className="grid content-start gap-2">
+            <Label>Card image</Label>
+            <p className="text-xs text-muted-foreground">
+              Shown on the projects list and the home page, cropped to a wide
+              8:3 band. 1600 x 600 works well. Empty draws a picture from the
+              project&apos;s subject.
+            </p>
+            <ImageUploadField
+              value={values.cover_image_url}
+              onChange={(url) => set("cover_image_url", url)}
+              prefix="projects"
+              previewClassName="aspect-[8/3] h-auto w-32"
+            />
+          </div>
+          <div className="grid content-start gap-2">
+            <Label>Page image</Label>
+            <p className="text-xs text-muted-foreground">
+              Shown at the top of the project&apos;s page at 16:9. 1920 x 1080
+              works well. Empty falls back to the card image.
+            </p>
+            <ImageUploadField
+              value={values.page_image_url}
+              onChange={(url) => set("page_image_url", url)}
+              prefix="projects"
+              previewClassName="aspect-video h-auto w-32"
+            />
+          </div>
         </div>
 
         <div className="grid gap-2">

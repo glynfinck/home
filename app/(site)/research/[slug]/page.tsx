@@ -78,9 +78,9 @@ export default async function ResearchPaperPage({ params }: Props) {
       <ReadingProgress />
       {/* Same three-column article grid as a blog post: TOC rail, prose, and
           the gutter `.sidenote` floats into. */}
-      <div className="mx-auto w-full max-w-3xl px-6 py-16 xl:max-w-[74rem]">
-        <div className="xl:grid xl:grid-cols-[12rem_minmax(0,44rem)_14rem] xl:gap-x-8">
-          <div className="hidden xl:block">
+      <div className="mx-auto w-full max-w-5xl px-6 py-16">
+        <div className="lg:grid lg:grid-cols-[10rem_minmax(0,1fr)] lg:gap-x-8 xl:grid-cols-[10rem_minmax(0,1fr)_11rem]">
+          <div className="hidden lg:block">
             <Toc entries={toc} variant="rail" />
           </div>
           <article className="min-w-0">
@@ -145,7 +145,7 @@ export default async function ResearchPaperPage({ params }: Props) {
 
             {paper.content ? (
               <div className="mt-10 border-t border-border/60 pt-10">
-                <div className="xl:hidden">
+                <div className="lg:hidden">
                   <Toc entries={toc} variant="inline" />
                 </div>
                 {/* The abstract and download button above are the point of the

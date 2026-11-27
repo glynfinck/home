@@ -14,23 +14,21 @@ export const metadata: Metadata = {
 
 export default function BlogPage() {
   return (
+    // The navbar's full width, like Projects and Research, so both edges of
+    // the list line up with the bars above and below it. The excerpts cap
+    // their own measure inside the rows.
     <section className="mx-auto w-full max-w-5xl px-6 py-16">
-      {/* Reading width, but starting at the navbar's left edge like every
-          other index, so the heading does not shift sideways between
-          sections. */}
-      <div className="max-w-3xl">
-        <h1 className="text-3xl font-semibold tracking-tight">Writing</h1>
-        <p className="mt-3 text-muted-foreground">
-          Software engineering, research, and the experiments in between.
-        </p>
+      <h1 className="text-3xl font-semibold tracking-tight">Writing</h1>
+      <p className="mt-3 max-w-2xl text-muted-foreground">
+        Software engineering, research, and the experiments in between.
+      </p>
 
-        {/* Inline rather than a loading.tsx: a route-level loading file here
-            would sit above [slug] and tag/[tag] and commit HTTP 200 before
-            either could call notFound(). See components/site/loading-shell. */}
-        <Suspense fallback={<PostRowsSkeleton command="ls blog/" />}>
-          <PostList />
-        </Suspense>
-      </div>
+      {/* Inline rather than a loading.tsx: a route-level loading file here
+          would sit above [slug] and tag/[tag] and commit HTTP 200 before
+          either could call notFound(). See components/site/loading-shell. */}
+      <Suspense fallback={<PostRowsSkeleton command="ls blog/" />}>
+        <PostList />
+      </Suspense>
     </section>
   );
 }
