@@ -38,9 +38,12 @@ jobs:
       - name: Unit tests
         run: npm run test:unit
 
+      # Pinned, not "latest": CLI 3.0 changed how the migrate job's flags
+      # behave, and an unpinned major bump broke the production push. Bump this
+      # and the copy in the migrate job together.
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 3.4.0
 
       - name: Start local Supabase
         run: |
@@ -122,22 +125,25 @@ jobs:
       - uses: supabase/setup-cli@v1
         if: steps.guard.outputs.ready == 'true'
         with:
-          version: latest
+          version: 3.4.0 # keep in step with the verify job
 
+      # CLI 3.x: commands target the local database unless given --remote,
+      # --password only applies alongside --remote, and a change to a hosted
+      # database needs --yes when there is no terminal to confirm at.
       - name: Link project
         if: steps.guard.outputs.ready == 'true'
-        run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" --password "${{ secrets.SUPABASE_DB_PASSWORD }}"
+        run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}"
 
       - name: Show migration state & plan
         if: steps.guard.outputs.ready == 'true'
         run: |
           echo "::group::Applied vs. pending"
-          supabase migration list --password "${{ secrets.SUPABASE_DB_PASSWORD }}" || true
+          supabase migration list --remote --password "${{ secrets.SUPABASE_DB_PASSWORD }}" || true
           echo "::endgroup::"
           echo "::group::Dry run (statements that will be applied)"
-          supabase db push --dry-run --password "${{ secrets.SUPABASE_DB_PASSWORD }}"
+          supabase db push --remote --dry-run --password "${{ secrets.SUPABASE_DB_PASSWORD }}"
           echo "::endgroup::"
 
       - name: Apply migrations
         if: steps.guard.outputs.ready == 'true'
-        run: supabase db push --password "${{ secrets.SUPABASE_DB_PASSWORD }}"
+        run: supabase db push --remote --yes --password "${{ secrets.SUPABASE_DB_PASSWORD }}"
