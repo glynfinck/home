@@ -1,4 +1,4 @@
-import { resolveTagIcon } from "@/lib/tag-icons";
+import { resolveTagIcon, type TagIconMap } from "@/lib/tag-icons";
 
 /**
  * The logo in front of a tag chip's label, or nothing for a tag without one.
@@ -10,7 +10,7 @@ export function TagIcon({
   uploaded,
 }: {
   tag: string;
-  uploaded?: Record<string, string>;
+  uploaded?: TagIconMap;
 }) {
   const icon = resolveTagIcon(tag, uploaded);
   if (!icon) return null;

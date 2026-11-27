@@ -4,7 +4,7 @@ import { unstable_noStore } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
 import type { Tables } from "@/types/helpers";
-import { resolveTagIcon, tagKey } from "@/lib/tag-icons";
+import { buildTagIconMap, resolveTagIcon } from "@/lib/tag-icons";
 
 /**
  * Admin reads — always fresh, always under the admin's cookie session
@@ -109,7 +109,7 @@ export type AdminTagOption = { name: string; iconUrl: string | null };
 /**
  * Tag picker options, lowercased and sorted. Topics: every topic in use on
  * posts, projects and papers. Stack: every technology in use plus every kind
- * name, with its logo (uploaded kind, else the built-in one).
+ * name, with its logo from /admin/kinds.
  */
 export async function adminTagOptions(
   kind: TagKind,
@@ -125,15 +125,13 @@ export async function adminTagOptions(
 
   const { data: kinds, error } = await supabase
     .from("tag_kinds")
-    .select("name, icon_url");
+    .select("name, icon_url, mono, aliases");
   if (error) throw error;
-  const uploaded = Object.fromEntries(
-    kinds.map((k) => [tagKey(k.name), k.icon_url]),
-  );
+  const icons = buildTagIconMap(kinds);
   const names = new Set([...used, ...kinds.map((k) => k.name.toLowerCase())]);
   return [...names].sort().map((name) => ({
     name,
-    iconUrl: resolveTagIcon(name, uploaded)?.src ?? null,
+    iconUrl: resolveTagIcon(name, icons)?.src ?? null,
   }));
 }
 

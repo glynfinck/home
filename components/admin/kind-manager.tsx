@@ -17,6 +17,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -26,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
+import { Switch } from "@/components/ui/switch";
 import { createClient } from "@/lib/supabase/client";
 import { deleteTagKind, upsertTagKind } from "@/lib/actions/admin";
 import {
@@ -44,13 +46,35 @@ function removeIconFile(url: string) {
   void createClient().storage.from("media").remove([path]);
 }
 
-function IconPreview({ url }: { url: string }) {
+/** The icon as the site draws it: mono marks take the text colour. */
+function IconPreview({ url, mono = false }: { url: string; mono?: boolean }) {
+  const mask = `url("${url}") center / contain no-repeat`;
   return (
     <div className="flex size-9 shrink-0 items-center justify-center rounded-md border bg-muted/20 p-1.5">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={url} alt="" className="size-full object-contain" />
+      {mono ? (
+        <span
+          aria-hidden
+          className="size-full bg-foreground"
+          style={{ mask, WebkitMask: mask }}
+        />
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={url} alt="" className="size-full object-contain" />
+      )}
     </div>
   );
+}
+
+/** "kdb, q,  kdb+" → ["kdb", "q", "kdb+"] */
+function parseAliases(text: string): string[] {
+  return [
+    ...new Set(
+      text
+        .split(",")
+        .map((a) => a.trim().toLowerCase())
+        .filter(Boolean),
+    ),
+  ];
 }
 
 export function KindManager({
@@ -68,9 +92,12 @@ export function KindManager({
     <>
       <h1 className="text-2xl font-semibold tracking-tight">Tag icons</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Pick a tag that&apos;s in use, upload a small square icon (SVG works
-        best), and every badge and tag picker showing that tag gets the icon.
-        Icons live in the public media bucket under{" "}
+        Every technology logo on the site comes from here. Pick a tag
+        that&apos;s in use and upload a small square icon (SVG works best).
+        Turn on <span className="font-medium text-foreground">Mono</span> for
+        black logos so they follow the text colour in dark mode, and add
+        aliases for other spellings of the same technology (kdb, q). Uploads
+        live in the public media bucket under{" "}
         <code className="font-mono text-xs">kinds/</code>.
       </p>
 
@@ -88,7 +115,8 @@ export function KindManager({
           <div className="mt-3 space-y-2">
             {kinds.map((kind) => (
               <KindRow
-                key={kind.id}
+                // Re-mounts the row when saved aliases change, resetting its input
+                key={`${kind.id}:${kind.aliases.join(",")}`}
                 kind={kind}
                 onChanged={() => router.refresh()}
               />
@@ -219,17 +247,27 @@ function KindRow({
   onChanged: () => void;
 }) {
   const [busy, setBusy] = React.useState(false);
+  const [aliases, setAliases] = React.useState(kind.aliases.join(", "));
   const inputRef = React.useRef<HTMLInputElement>(null);
+
+  async function save(
+    patch: Partial<Pick<TagKind, "icon_url" | "mono" | "aliases">>,
+  ) {
+    return upsertTagKind({
+      id: kind.id,
+      name: kind.name,
+      icon_url: kind.icon_url,
+      mono: kind.mono,
+      aliases: kind.aliases,
+      ...patch,
+    });
+  }
 
   async function replaceIcon(file: File) {
     setBusy(true);
     try {
       const url = await uploadToMediaBucket(file, "kinds");
-      const result = await upsertTagKind({
-        id: kind.id,
-        name: kind.name,
-        icon_url: url,
-      });
+      const result = await save({ icon_url: url });
       if (!result.ok) {
         removeIconFile(url);
         toast.error(result.error);
@@ -247,6 +285,31 @@ function KindRow({
     }
   }
 
+  async function setMono(mono: boolean) {
+    setBusy(true);
+    const result = await save({ mono });
+    setBusy(false);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    onChanged();
+  }
+
+  async function saveAliases() {
+    const next = parseAliases(aliases);
+    if (next.join(",") === kind.aliases.join(",")) return;
+    setBusy(true);
+    const result = await save({ aliases: next });
+    setBusy(false);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success(`Aliases saved for “${kind.name}”`);
+    onChanged();
+  }
+
   async function remove() {
     setBusy(true);
     const result = await deleteTagKind(kind.id);
@@ -260,63 +323,93 @@ function KindRow({
     onChanged();
   }
 
+  const monoId = `mono-${kind.id}`;
+
   return (
-    <div className="flex items-center gap-3 rounded-lg border p-3">
-      <IconPreview url={kind.icon_url} />
-      <span className="truncate font-mono text-sm">{kind.name}</span>
-      <div className="ml-auto flex items-center gap-1">
-        <input
-          ref={inputRef}
-          type="file"
-          accept={MEDIA_IMAGE_ACCEPT}
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) void replaceIcon(file);
-            e.target.value = "";
-          }}
-        />
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={busy}
-          aria-label={`Replace icon for ${kind.name}`}
-          title="Replace icon"
-          onClick={() => inputRef.current?.click()}
-        >
-          {busy ? <Spinner /> : <ImageUp className="size-3.5" />}
-        </Button>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
+    <div className="rounded-lg border p-3">
+      <div className="flex items-center gap-3">
+        <IconPreview url={kind.icon_url} mono={kind.mono} />
+        <span className="min-w-0 truncate font-mono text-sm">{kind.name}</span>
+        <div className="ml-auto flex shrink-0 items-center gap-1">
+          <div className="mr-1 flex items-center gap-1.5">
+            <Switch
+              id={monoId}
+              checked={kind.mono}
               disabled={busy}
-              aria-label={`Delete icon for ${kind.name}`}
-              title="Delete"
+              onCheckedChange={(checked) => void setMono(checked)}
+            />
+            <Label
+              htmlFor={monoId}
+              className="text-xs font-normal text-muted-foreground"
             >
-              <Trash2 className="size-3.5 text-destructive" />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                Delete the “{kind.name}” icon?
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                Badges for this tag go back to plain text. The icon file is
-                removed from the media bucket.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={() => void remove()}>
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+              Mono
+            </Label>
+          </div>
+          <input
+            ref={inputRef}
+            type="file"
+            accept={MEDIA_IMAGE_ACCEPT}
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void replaceIcon(file);
+              e.target.value = "";
+            }}
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={busy}
+            aria-label={`Replace icon for ${kind.name}`}
+            title="Replace icon"
+            onClick={() => inputRef.current?.click()}
+          >
+            {busy ? <Spinner /> : <ImageUp className="size-3.5" />}
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={busy}
+                aria-label={`Delete icon for ${kind.name}`}
+                title="Delete"
+              >
+                <Trash2 className="size-3.5 text-destructive" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  Delete the “{kind.name}” icon?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  Badges for this tag and its aliases go back to plain text.
+                  An uploaded icon file is removed from the media bucket.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => void remove()}>
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
+      <Input
+        aria-label={`Aliases for ${kind.name}`}
+        placeholder="Aliases, comma separated"
+        value={aliases}
+        disabled={busy}
+        onChange={(e) => setAliases(e.target.value)}
+        onBlur={() => void saveAliases()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.currentTarget.blur();
+        }}
+        className="mt-2 h-8 font-mono text-xs"
+      />
     </div>
   );
 }

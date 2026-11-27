@@ -4,7 +4,7 @@ import { supabasePublic } from "@/lib/supabase/public";
 import { safeRead } from "@/lib/data/util";
 import type { Tables } from "@/types/helpers";
 import { CACHE_TAGS } from "@/lib/data/settings";
-import { tagKey } from "@/lib/tag-icons";
+import { buildTagIconMap, type TagIconMap } from "@/lib/tag-icons";
 
 export type TagKind = Tables<"tag_kinds">;
 
@@ -26,13 +26,10 @@ export const getTagKinds = (): Promise<TagKind[]> =>
   safeRead("tag_kinds", getTagKindsCached, []);
 
 /**
- * Kind name, folded by `tagKey` → icon URL. Look tags up through
+ * Icons by `tagKey` for every kind name and alias. Look tags up through
  * `resolveTagIcon`, which folds them the same way, so "C++" finds the
- * "cplusplus" kind and "Next.js" finds "nextjs".
+ * "cplusplus" kind and "kdb" finds kx through its alias.
  */
-export async function getTagIconMap(): Promise<Record<string, string>> {
-  const kinds = await getTagKinds();
-  return Object.fromEntries(
-    kinds.map((kind) => [tagKey(kind.name), kind.icon_url]),
-  );
+export async function getTagIconMap(): Promise<TagIconMap> {
+  return buildTagIconMap(await getTagKinds());
 }

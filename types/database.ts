@@ -560,23 +560,29 @@ export type Database = {
       }
       tag_kinds: {
         Row: {
+          aliases: string[]
           created_at: string
           icon_url: string
           id: string
+          mono: boolean
           name: string
           updated_at: string
         }
         Insert: {
+          aliases?: string[]
           created_at?: string
           icon_url: string
           id?: string
+          mono?: boolean
           name: string
           updated_at?: string
         }
         Update: {
+          aliases?: string[]
           created_at?: string
           icon_url?: string
           id?: string
+          mono?: boolean
           name?: string
           updated_at?: string
         }
@@ -608,6 +614,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      tag_key: { Args: { tag: string }; Returns: string }
     }
     Enums: {
       comment_status: "visible" | "hidden"

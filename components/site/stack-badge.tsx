@@ -1,5 +1,6 @@
 import { Chip } from "@/components/site/chip";
 import { TagIcon } from "@/components/site/tag-icon";
+import type { TagIconMap } from "@/lib/tag-icons";
 
 /**
  * Tech-stack chip with the technology's logo. Uploaded kinds (`tag_kinds`)
@@ -11,7 +12,7 @@ export function StackBadge({
   tagIcons,
 }: {
   tag: string;
-  tagIcons?: Record<string, string>;
+  tagIcons?: TagIconMap;
 }) {
   return (
     <Chip>

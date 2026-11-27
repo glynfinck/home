@@ -8,13 +8,14 @@ import { Chip } from "@/components/site/chip";
 import { StackBadge } from "@/components/site/stack-badge";
 import { TagRow } from "@/components/site/tag-row";
 import type { Project } from "@/lib/data/projects";
+import type { TagIconMap } from "@/lib/tag-icons";
 
 export function ProjectCard({
   project,
   tagIcons,
 }: {
   project: Project;
-  tagIcons?: Record<string, string>;
+  tagIcons?: TagIconMap;
 }) {
   return (
     <article className="group relative flex flex-col overflow-hidden rounded-lg border border-border/60 bg-card/40 transition-colors duration-200 hover:border-border hover:bg-card">
