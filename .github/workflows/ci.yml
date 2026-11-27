@@ -87,9 +87,9 @@ jobs:
         run: supabase stop --no-backup || true
 
   # ---------------------------------------------------------------------------
-  # migrate: push migrations to the production Supabase project. App deploys
-  # are handled by Vercel (production branch = main, previews off), so there
-  # is no deploy job here.
+  # migrate: push migrations to the production Supabase project. The app is
+  # deployed by the `deploy` job below, only after this job has finished, so
+  # a production build never reads a column its migration has not added yet.
   # Only on push to main, only after verify passes. Migration *validity* is
   # already proven by verify's `supabase db reset` on a fresh DB, so a broken
   # migration fails CI before it can reach production.
@@ -147,3 +147,34 @@ jobs:
       - name: Apply migrations
         if: steps.guard.outputs.ready == 'true'
         run: supabase db push --remote --yes --password "${{ secrets.SUPABASE_DB_PASSWORD }}"
+
+  # ---------------------------------------------------------------------------
+  # deploy: build production on Vercel, after migrations are in.
+  #
+  # Vercel's own deploy-on-push is off for main (vercel.json:
+  # git.deploymentEnabled.main = false). Left on, it started building the
+  # moment a PR merged and raced the migrate job: PR #18's build prerendered
+  # against the old schema and failed. Now the only production deploy is this
+  # deploy hook, called after verify and migrate succeed.
+  #
+  # Needs the VERCEL_DEPLOY_HOOK_URL secret (Vercel > Project > Settings > Git
+  # > Deploy Hooks, branch main). Without it this job fails loudly rather than
+  # skipping, because with auto-deploy off nothing else would ship main.
+  # ---------------------------------------------------------------------------
+  deploy:
+    needs: [verify, migrate]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency: production-deploy
+    steps:
+      - name: Trigger the Vercel production deploy
+        env:
+          HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::error title=No production deploy::Add the VERCEL_DEPLOY_HOOK_URL secret (Vercel > Project > Settings > Git > Deploy Hooks, branch main). Vercel no longer deploys main on push."
+            exit 1
+          fi
+          curl --fail --silent --show-error -X POST "$HOOK"
+          echo
+          echo "::notice title=Production deploy triggered::Vercel is building ${GITHUB_SHA::7} now that migrations are applied."

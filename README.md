@@ -186,9 +186,8 @@ These run in CI on every push and pull request (see below).
 
 ## Continuous integration (GitHub Actions)
 
-Deploys are handled by **Vercel's Git integration**, configured to deploy the
-**production branch (`main`) only** — see below. GitHub Actions
-(`.github/workflows/ci.yml`) owns testing and database migrations, in two jobs:
+GitHub Actions (`.github/workflows/ci.yml`) owns testing, database
+migrations and the production deploy, in three jobs that run in order:
 
 - **verify** (every PR + push) — spins up a throwaway Supabase inside the
   runner, applies migrations + seed, then runs lint, typecheck, the Vitest
@@ -198,6 +197,10 @@ Deploys are handled by **Vercel's Git integration**, configured to deploy the
 - **migrate** (push to `main` only) — `supabase db push` to the production
   project. Additive, tracked, transactional; it **never** resets or seeds
   prod. Logs `migration list` + `db push --dry-run` before applying.
+- **deploy** (push to `main` only, after **migrate**) — calls a Vercel deploy
+  hook, so production builds only once its migrations are applied. Vercel's
+  own deploy-on-push is off for `main` (`vercel.json`), because it started
+  building the moment a PR merged and could prerender against the old schema.
 
 `db reset` (destructive) only ever runs against the disposable runner
 database in **verify** — it has no production credentials and cannot reach the
@@ -212,12 +215,17 @@ green. Add these repo secrets to enable automatic migrations:
 | `SUPABASE_ACCESS_TOKEN` | supabase.com → Account → Access Tokens |
 | `SUPABASE_PROJECT_REF` | the `xxxx` in `xxxx.supabase.co` |
 | `SUPABASE_DB_PASSWORD` | the DB password set when creating the project |
+| `VERCEL_DEPLOY_HOOK_URL` | Vercel → Project → Settings → Git → Deploy Hooks, branch `main` |
 
 ```bash
 gh secret set SUPABASE_ACCESS_TOKEN
 gh secret set SUPABASE_PROJECT_REF
 gh secret set SUPABASE_DB_PASSWORD
+gh secret set VERCEL_DEPLOY_HOOK_URL
 ```
+
+Unlike the Supabase secrets, `VERCEL_DEPLOY_HOOK_URL` is required: without it
+the **deploy** job fails, since nothing else deploys `main`.
 
 ### Vercel setup
 
@@ -229,8 +237,10 @@ gh secret set SUPABASE_DB_PASSWORD
   Deployment (or → Git) → **Ignored Build Step** →
   `if [ "$VERCEL_GIT_COMMIT_REF" = "main" ]; then exit 1; else exit 0; fi`
   (exit 1 = build, exit 0 = skip → only `main` builds).
-- Production deploys happen on push to `main`. After changing project
-  settings/env vars, **redeploy** so the live deployment picks them up.
+- Production deploys come from CI's **deploy** job (a deploy hook), after
+  migrations. `vercel.json` turns off Vercel's automatic deploys for `main`.
+  After changing project settings/env vars, **redeploy** so the live
+  deployment picks them up.
 
 ## Project layout
 
